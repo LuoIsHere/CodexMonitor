@@ -4,6 +4,8 @@ CodexMonitor is a small personal Windows utility that displays the current Codex
 
 Current version: `0.2.1`
 
+![CodexMonitor dashboard showing Codex quota usage](assets/screenshots/codex-monitor-dashboard.png)
+
 ## Features
 
 - Shows the remaining percentage and reset countdown for the approximately five-hour quota window (`5H`).

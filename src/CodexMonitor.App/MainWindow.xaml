@@ -15,19 +15,18 @@
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None">
+        WindowStyle="SingleBorderWindow">
   <shell:WindowChrome.WindowChrome>
     <shell:WindowChrome CaptionHeight="36"
                         CornerRadius="0"
-                        GlassFrameThickness="0"
+                        GlassFrameThickness="-1"
                         ResizeBorderThickness="6"
                         UseAeroCaptionButtons="False" />
   </shell:WindowChrome.WindowChrome>
 
-  <Border Background="{StaticResource WindowTintBrush}"
-          BorderBrush="#42FFFFFF"
-          BorderThickness="1"
-          CornerRadius="14">
+  <Border x:Name="WindowSurface"
+          Background="{StaticResource WindowTintBrush}"
+          CornerRadius="0">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="36" />
@@ -35,11 +34,12 @@
         <RowDefinition Height="34" />
       </Grid.RowDefinitions>
 
-      <Border Grid.Row="0"
+      <Border x:Name="TitleBarSurface"
+              Grid.Row="0"
               Background="#12FFFFFF"
               BorderBrush="{StaticResource DividerBrush}"
               BorderThickness="0,0,0,1"
-              CornerRadius="14,14,0,0">
+              CornerRadius="0">
         <Grid Margin="10,0,4,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />

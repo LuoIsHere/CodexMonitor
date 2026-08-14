@@ -5,7 +5,7 @@
 ### Added
 
 - Added a compact dark acrylic main window with a custom integrated title bar.
-- Added a controllable dark Acrylic Blur through the Windows composition API, with Windows 11 DWM Desktop Acrylic as a fallback.
+- Added a compact dark glass window that uses native Windows Acrylic when transparency effects are enabled and an app-rendered translucent fallback otherwise.
 - Added a three-column `5H`, `7D`, and quota-reset-time layout with subtle vertical dividers.
 - Added separate 5-hour and 7-day reset timestamps, using `-` when a reset time is unavailable.
 - Added the current subscription type to the left side of a dedicated footer surface.

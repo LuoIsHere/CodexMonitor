@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Shell;
 using LuoIsHere.CodexMonitor.App.ViewModels;
 using LuoIsHere.CodexMonitor.App.Windows;
 
@@ -13,18 +14,37 @@ public partial class MainWindow : Window
     public MainWindow(MainWindowViewModel viewModel)
     {
         InitializeComponent();
+        ConfigureBackdropMode();
         _viewModel = viewModel;
         DataContext = viewModel;
-        SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
+        ContentRendered += OnContentRendered;
         Closing += OnClosing;
     }
 
     public event EventHandler? HiddenToTray;
 
-    private void OnSourceInitialized(object? sender, EventArgs e)
+    private void ConfigureBackdropMode()
     {
-        SourceInitialized -= OnSourceInitialized;
+        if (WindowBackdropService.RequiresLayeredTransparencyFallback())
+        {
+            WindowStyle = WindowStyle.None;
+            AllowsTransparency = true;
+            if (WindowChrome.GetWindowChrome(this) is { } chrome)
+            {
+                chrome.GlassFrameThickness = new Thickness(0);
+            }
+            WindowSurface.CornerRadius = new CornerRadius(14);
+            TitleBarSurface.CornerRadius = new CornerRadius(14, 14, 0, 0);
+            return;
+        }
+
+        WindowSurface.Background = System.Windows.Media.Brushes.Transparent;
+    }
+
+    private void OnContentRendered(object? sender, EventArgs e)
+    {
+        ContentRendered -= OnContentRendered;
         WindowBackdropService.ApplyDarkAcrylic(this);
     }
 
