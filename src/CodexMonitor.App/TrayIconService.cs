@@ -61,6 +61,28 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.ShowBalloonTip(3_000);
     }
 
+    public void ShowRefreshFailureNotification(string error)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        const int maximumErrorLength = 160;
+        var compactError = string.IsNullOrWhiteSpace(error)
+            ? "未知错误"
+            : error.Trim();
+        if (compactError.Length > maximumErrorLength)
+        {
+            compactError = compactError[..maximumErrorLength] + "…";
+        }
+
+        _notifyIcon.BalloonTipTitle = "CodexMonitor 刷新失败";
+        _notifyIcon.BalloonTipText = $"{compactError}\n详细信息已写入日志。";
+        _notifyIcon.BalloonTipIcon = Forms.ToolTipIcon.Warning;
+        _notifyIcon.ShowBalloonTip(5_000);
+    }
+
     private void OnMouseClick(object? sender, Forms.MouseEventArgs e)
     {
         if (e.Button == Forms.MouseButtons.Left)

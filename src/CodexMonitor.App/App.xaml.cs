@@ -30,6 +30,7 @@ public partial class App : System.Windows.Application
             _viewModel = new MainWindowViewModel(
                 refreshService,
                 TimeSpan.FromMinutes(settings.RefreshIntervalMinutes));
+            _viewModel.RefreshFailed += OnRefreshFailed;
 
             _mainWindow = new MainWindow(_viewModel);
             _mainWindow.HiddenToTray += OnWindowHiddenToTray;
@@ -71,6 +72,9 @@ public partial class App : System.Windows.Application
     private async void OnTrayExitRequested(object? sender, EventArgs e)
         => await ExitApplicationAsync();
 
+    private void OnRefreshFailed(object? sender, RefreshFailedEventArgs e)
+        => _trayIcon?.ShowRefreshFailureNotification(e.Message);
+
     private async Task ExitApplicationAsync()
     {
         if (_exitStarted)
@@ -83,6 +87,7 @@ public partial class App : System.Windows.Application
 
         if (_viewModel is not null)
         {
+            _viewModel.RefreshFailed -= OnRefreshFailed;
             await _viewModel.DisposeAsync();
             _viewModel = null;
         }

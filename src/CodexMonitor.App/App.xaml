@@ -3,5 +3,49 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
+    <SolidColorBrush x:Key="WindowTintBrush" Color="#08000000" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#28000000" />
+    <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#3FFFFFFF" />
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFF5F5F7" />
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#FFA6A8AE" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#32FFFFFF" />
+    <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Margin" Value="2,0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="ButtonBackground"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="7">
+              <ContentPresenter HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="ButtonBackground"
+                        Property="Background"
+                        Value="{StaticResource SurfaceHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="ButtonBackground"
+                        Property="Opacity"
+                        Value="0.72" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.4" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Application.Resources>
 </Application>

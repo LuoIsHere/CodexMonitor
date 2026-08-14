@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using LuoIsHere.CodexMonitor.App.ViewModels;
+using LuoIsHere.CodexMonitor.App.Windows;
 
 namespace LuoIsHere.CodexMonitor.App;
 
@@ -14,11 +15,18 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+        SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
         Closing += OnClosing;
     }
 
     public event EventHandler? HiddenToTray;
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        SourceInitialized -= OnSourceInitialized;
+        WindowBackdropService.ApplyDarkAcrylic(this);
+    }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -37,6 +45,12 @@ public partial class MainWindow : Window
         Hide();
         HiddenToTray?.Invoke(this, EventArgs.Empty);
     }
+
+    private void OnMinimizeClick(object sender, RoutedEventArgs e)
+        => WindowState = WindowState.Minimized;
+
+    private void OnCloseClick(object sender, RoutedEventArgs e)
+        => Close();
 
     public void ShowFromTray()
     {

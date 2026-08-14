@@ -82,6 +82,17 @@ public static class QuotaDisplayFormatter
             : snapshot.ObservedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture);
     }
 
+    public static string FormatResetTime(QuotaSnapshot? snapshot, QuotaWindow? window)
+    {
+        if (snapshot?.Account.SuppressQuotaDisplay == true ||
+            window?.ResetsAt is not DateTimeOffset resetsAt)
+        {
+            return "-";
+        }
+
+        return resetsAt.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture);
+    }
+
     private static string FormatPlan(string? planType)
     {
         if (string.IsNullOrWhiteSpace(planType))

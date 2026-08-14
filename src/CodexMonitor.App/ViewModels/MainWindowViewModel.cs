@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Threading;
 using LuoIsHere.CodexMonitor.Core.Formatting;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Core.Refresh;
@@ -15,11 +14,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
     private readonly QuotaRefreshService _refreshService;
     private readonly TimeSpan _refreshInterval;
     private readonly CancellationTokenSource _lifetime = new();
-    private readonly DispatcherTimer _clockTimer;
     private readonly object _activeRefreshLock = new();
     private readonly HashSet<Task> _activeRefreshTasks = [];
     private Task? _periodicTask;
     private QuotaMonitorState _state;
+    private DateTimeOffset? _lastNotifiedFailureAttemptAt;
     private bool _started;
     private bool _disposed;
 
@@ -31,15 +30,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         RefreshCommand = new AsyncCommand(
             RefreshAsync,
             () => !_state.IsRefreshing);
-        _clockTimer = new DispatcherTimer(DispatcherPriority.Background)
-        {
-            Interval = TimeSpan.FromSeconds(1),
-        };
-        _clockTimer.Tick += OnClockTick;
         _refreshService.StateChanged += OnStateChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public event EventHandler<RefreshFailedEventArgs>? RefreshFailed;
 
     public AsyncCommand RefreshCommand { get; }
 
@@ -47,19 +43,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.FiveHour);
 
-    public string FiveHourCountdown => QuotaDisplayFormatter.FormatCountdown(
-        Snapshot,
-        Snapshot?.FiveHour,
-        DateTimeOffset.Now,
-        includeSeconds: true);
-
     public string WeeklyPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.Weekly);
 
-    public string WeeklyCountdown => QuotaDisplayFormatter.FormatCountdown(
-        Snapshot,
-        Snapshot?.Weekly,
-        DateTimeOffset.Now,
-        includeSeconds: false);
+    public string FiveHourResetTime => QuotaDisplayFormatter.FormatResetTime(Snapshot, Snapshot?.FiveHour);
+
+    public string WeeklyResetTime => QuotaDisplayFormatter.FormatResetTime(Snapshot, Snapshot?.Weekly);
 
     public string LastRefreshText => QuotaDisplayFormatter.FormatRefreshTime(Snapshot);
 
@@ -75,10 +63,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
             ? Snapshot is null ? MediaBrushes.Firebrick : MediaBrushes.DarkOrange
             : Snapshot is null ? MediaBrushes.Gray : MediaBrushes.ForestGreen;
 
-    public string ErrorText => _state.Error ?? string.Empty;
-
-    public string RefreshIntervalText => $"每 {(int)_refreshInterval.TotalMinutes} 分钟自动刷新";
-
     private QuotaSnapshot? Snapshot => _state.LastSuccessfulSnapshot;
 
     public async Task StartAsync()
@@ -89,7 +73,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         }
 
         _started = true;
-        _clockTimer.Start();
         await RefreshAsync();
         _periodicTask = _refreshService.RunPeriodicAsync(_refreshInterval, _lifetime.Token);
     }
@@ -143,26 +126,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         _state = state;
         RaiseDisplayProperties();
         RefreshCommand.NotifyCanExecuteChanged();
-    }
 
-    private void OnClockTick(object? sender, EventArgs e)
-    {
-        OnPropertyChanged(nameof(FiveHourCountdown));
-        OnPropertyChanged(nameof(WeeklyCountdown));
-        OnPropertyChanged(nameof(LastRefreshText));
+        if (state.Error is not null &&
+            state.LastAttemptAt is DateTimeOffset attemptAt &&
+            attemptAt != _lastNotifiedFailureAttemptAt)
+        {
+            _lastNotifiedFailureAttemptAt = attemptAt;
+            RefreshFailed?.Invoke(this, new RefreshFailedEventArgs(state.Error, attemptAt));
+        }
     }
 
     private void RaiseDisplayProperties()
     {
         OnPropertyChanged(nameof(AccountText));
         OnPropertyChanged(nameof(FiveHourPercent));
-        OnPropertyChanged(nameof(FiveHourCountdown));
         OnPropertyChanged(nameof(WeeklyPercent));
-        OnPropertyChanged(nameof(WeeklyCountdown));
+        OnPropertyChanged(nameof(FiveHourResetTime));
+        OnPropertyChanged(nameof(WeeklyResetTime));
         OnPropertyChanged(nameof(LastRefreshText));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(StatusBrush));
-        OnPropertyChanged(nameof(ErrorText));
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -182,8 +165,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
             activeRefreshTasks = [.. _activeRefreshTasks];
         }
 
-        _clockTimer.Stop();
-        _clockTimer.Tick -= OnClockTick;
         _refreshService.StateChanged -= OnStateChanged;
         await _lifetime.CancelAsync();
 
@@ -211,4 +192,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         _refreshService.Dispose();
         _lifetime.Dispose();
     }
+}
+
+public sealed class RefreshFailedEventArgs(string message, DateTimeOffset attemptedAt) : EventArgs
+{
+    public string Message { get; } = message;
+
+    public DateTimeOffset AttemptedAt { get; } = attemptedAt;
 }

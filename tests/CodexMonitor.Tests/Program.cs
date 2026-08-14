@@ -160,6 +160,11 @@ static void TestDisplayFormatting()
 
     Equal("72%", QuotaDisplayFormatter.FormatPercent(snapshot.FiveHour), "rounded percent");
     Equal("unavailable", QuotaDisplayFormatter.FormatCountdown(null, DateTimeOffset.Now, true), "unavailable window");
+    Equal("-", QuotaDisplayFormatter.FormatResetTime(snapshot, null), "missing reset time");
+    Equal(
+        snapshot.FiveHour!.ResetsAt!.Value.ToLocalTime().ToString("MM-dd HH:mm"),
+        QuotaDisplayFormatter.FormatResetTime(snapshot, snapshot.FiveHour),
+        "formatted reset time");
 }
 
 static void TestChatGptAccountResponse()
@@ -241,6 +246,7 @@ static void TestTokenDisplaySuppression()
         QuotaDisplayFormatter.FormatCountdown(snapshot, snapshot.FiveHour, DateTimeOffset.Now, true),
         "token reset countdown");
     Equal("None", QuotaDisplayFormatter.FormatRefreshTime(snapshot), "token refresh time");
+    Equal("-", QuotaDisplayFormatter.FormatResetTime(snapshot, snapshot.FiveHour), "token reset time");
 }
 
 static LuoIsHere.CodexMonitor.Core.Models.QuotaSnapshot Parse(string json)
