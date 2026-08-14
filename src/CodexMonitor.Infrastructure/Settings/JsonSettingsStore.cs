@@ -68,12 +68,13 @@ public sealed class JsonSettingsStore
     {
         return settings with
         {
-            SchemaVersion = 1,
+            SchemaVersion = 2,
             RefreshIntervalMinutes = Math.Clamp(settings.RefreshIntervalMinutes, 1, 60),
             CodexExecutable = string.IsNullOrWhiteSpace(settings.CodexExecutable)
                 ? null
                 : Environment.ExpandEnvironmentVariables(settings.CodexExecutable.Trim()),
+            Notifications = settings.Notifications ?? new NotificationSettings(),
+            Display = settings.Display ?? new DisplaySettings(),
         };
     }
 }
-

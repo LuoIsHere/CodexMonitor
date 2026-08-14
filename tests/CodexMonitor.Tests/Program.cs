@@ -3,6 +3,7 @@ using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Formatting;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Infrastructure.Codex;
+using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -18,6 +19,8 @@ var tests = new (string Name, Action Run)[]
     ("API key account response", TestApiKeyAccountResponse),
     ("signed-out account response", TestSignedOutAccountResponse),
     ("token display suppression", TestTokenDisplaySuppression),
+    ("schema 1 settings migration", TestSchemaOneSettingsMigration),
+    ("schema 2 settings roundtrip", TestSchemaTwoSettingsRoundtrip),
 };
 
 if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
@@ -249,6 +252,85 @@ static void TestTokenDisplaySuppression()
     Equal("-", QuotaDisplayFormatter.FormatResetTime(snapshot, snapshot.FiveHour), "token reset time");
 }
 
+static void TestSchemaOneSettingsMigration()
+{
+    WithTemporarySettingsDirectory(directory =>
+    {
+        File.WriteAllText(
+            Path.Combine(directory, "settings.json"),
+            """
+            {
+              "schemaVersion": 1,
+              "refreshIntervalMinutes": 0,
+              "codexExecutable": null
+            }
+            """);
+
+        var settings = new JsonSettingsStore(new SilentLogger()).LoadAsync().GetAwaiter().GetResult();
+        Equal(2, settings.SchemaVersion, "migrated schema version");
+        Equal(1, settings.RefreshIntervalMinutes, "clamped legacy refresh interval");
+        Equal(true, settings.Notifications.Enabled, "legacy notification default");
+        Equal(true, settings.Display.ShowFiveHourQuota, "legacy 5H display default");
+        Equal(true, settings.Display.ShowWeeklyQuota, "legacy 7D display default");
+        Equal(true, settings.Display.ShowResetTimes, "legacy reset display default");
+        Equal(true, settings.Display.ShowSubscription, "legacy subscription display default");
+    });
+}
+
+static void TestSchemaTwoSettingsRoundtrip()
+{
+    WithTemporarySettingsDirectory(_ =>
+    {
+        var expected = new AppSettings
+        {
+            RefreshIntervalMinutes = 17,
+            Notifications = new NotificationSettings { Enabled = false },
+            Display = new DisplaySettings
+            {
+                ShowFiveHourQuota = false,
+                ShowWeeklyQuota = true,
+                ShowResetTimes = false,
+                ShowSubscription = false,
+            },
+        };
+        var store = new JsonSettingsStore(new SilentLogger());
+        store.SaveAsync(expected).GetAwaiter().GetResult();
+        var actual = store.LoadAsync().GetAwaiter().GetResult();
+
+        Equal(2, actual.SchemaVersion, "saved schema version");
+        Equal(17, actual.RefreshIntervalMinutes, "saved refresh interval");
+        Equal(false, actual.Notifications.Enabled, "saved notification state");
+        Equal(false, actual.Display.ShowFiveHourQuota, "saved 5H state");
+        Equal(true, actual.Display.ShowWeeklyQuota, "saved 7D state");
+        Equal(false, actual.Display.ShowResetTimes, "saved reset state");
+        Equal(false, actual.Display.ShowSubscription, "saved subscription state");
+    });
+}
+
+static void WithTemporarySettingsDirectory(Action<string> action)
+{
+    var previousHome = Environment.GetEnvironmentVariable("CODEX_MONITOR_HOME");
+    var directory = Path.Combine(
+        Path.GetTempPath(),
+        "CodexMonitor.Tests",
+        Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(directory);
+    Environment.SetEnvironmentVariable("CODEX_MONITOR_HOME", directory);
+
+    try
+    {
+        action(directory);
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable("CODEX_MONITOR_HOME", previousHome);
+        if (Directory.Exists(directory))
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+}
+
 static LuoIsHere.CodexMonitor.Core.Models.QuotaSnapshot Parse(string json)
 {
     using var document = JsonDocument.Parse(json);
@@ -284,4 +366,15 @@ file sealed class ConsoleLogger : IAppLogger
 
     public void Error(string message, Exception? exception = null)
         => Console.Error.WriteLine($"[ERROR] {message} {exception?.Message}");
+}
+
+file sealed class SilentLogger : IAppLogger
+{
+    public void Info(string message)
+    {
+    }
+
+    public void Error(string message, Exception? exception = null)
+    {
+    }
 }

@@ -87,6 +87,14 @@ public partial class MainWindow : Window
         Activate();
     }
 
+    public void MinimizeFromTray()
+    {
+        if (IsVisible)
+        {
+            WindowState = WindowState.Minimized;
+        }
+    }
+
     public void CloseForExit()
     {
         _allowClose = true;

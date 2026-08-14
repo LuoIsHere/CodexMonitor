@@ -8,25 +8,40 @@ public sealed class TrayIconService : IDisposable
     private readonly Icon _applicationIcon;
     private readonly Forms.NotifyIcon _notifyIcon;
     private readonly Forms.ContextMenuStrip _contextMenu;
+    private readonly Forms.ToolStripMenuItem _minimizeItem;
+    private readonly Forms.ToolStripMenuItem _floatingWindowItem;
+    private readonly IFloatingWindowService _floatingWindowService;
     private bool _backgroundNotificationShown;
     private bool _disposed;
 
-    public TrayIconService()
+    public TrayIconService(IFloatingWindowService floatingWindowService)
     {
+        _floatingWindowService = floatingWindowService;
         _applicationIcon = LoadApplicationIcon();
 
-        var openItem = new Forms.ToolStripMenuItem("打开窗口");
-        openItem.Click += OnOpenClick;
+        _minimizeItem = new Forms.ToolStripMenuItem("最小化");
+        _minimizeItem.Click += OnMinimizeClick;
 
-        var refreshItem = new Forms.ToolStripMenuItem("立即刷新");
-        refreshItem.Click += OnRefreshClick;
+        _floatingWindowItem = new Forms.ToolStripMenuItem("启用悬浮窗")
+        {
+            Checked = floatingWindowService.IsEnabled,
+            Enabled = floatingWindowService.IsAvailable,
+            ToolTipText = floatingWindowService.IsAvailable
+                ? string.Empty
+                : "悬浮窗将在后续版本中提供。",
+        };
+        _floatingWindowItem.Click += OnFloatingWindowClick;
 
-        var exitItem = new Forms.ToolStripMenuItem("退出");
+        var settingsItem = new Forms.ToolStripMenuItem("设置");
+        settingsItem.Click += OnSettingsClick;
+
+        var exitItem = new Forms.ToolStripMenuItem("退出程序");
         exitItem.Click += OnExitClick;
 
-        _contextMenu = new Forms.ContextMenuStrip();
-        _contextMenu.Items.Add(openItem);
-        _contextMenu.Items.Add(refreshItem);
+        _contextMenu = CreateContextMenu();
+        _contextMenu.Items.Add(_minimizeItem);
+        _contextMenu.Items.Add(_floatingWindowItem);
+        _contextMenu.Items.Add(settingsItem);
         _contextMenu.Items.Add(new Forms.ToolStripSeparator());
         _contextMenu.Items.Add(exitItem);
 
@@ -42,9 +57,19 @@ public sealed class TrayIconService : IDisposable
 
     public event EventHandler? OpenRequested;
 
-    public event EventHandler? RefreshRequested;
+    public event EventHandler? MinimizeRequested;
+
+    public event EventHandler? SettingsRequested;
 
     public event EventHandler? ExitRequested;
+
+    public void SetCanMinimize(bool canMinimize)
+    {
+        if (!_disposed)
+        {
+            _minimizeItem.Enabled = canMinimize;
+        }
+    }
 
     public void ShowBackgroundNotificationOnce()
     {
@@ -91,11 +116,22 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
-    private void OnOpenClick(object? sender, EventArgs e)
-        => OpenRequested?.Invoke(this, EventArgs.Empty);
+    private void OnMinimizeClick(object? sender, EventArgs e)
+        => MinimizeRequested?.Invoke(this, EventArgs.Empty);
 
-    private void OnRefreshClick(object? sender, EventArgs e)
-        => RefreshRequested?.Invoke(this, EventArgs.Empty);
+    private void OnFloatingWindowClick(object? sender, EventArgs e)
+    {
+        if (!_floatingWindowService.IsAvailable)
+        {
+            return;
+        }
+
+        _floatingWindowService.SetEnabled(!_floatingWindowService.IsEnabled);
+        _floatingWindowItem.Checked = _floatingWindowService.IsEnabled;
+    }
+
+    private void OnSettingsClick(object? sender, EventArgs e)
+        => SettingsRequested?.Invoke(this, EventArgs.Empty);
 
     private void OnExitClick(object? sender, EventArgs e)
         => ExitRequested?.Invoke(this, EventArgs.Empty);
@@ -115,6 +151,26 @@ public sealed class TrayIconService : IDisposable
         return (Icon)SystemIcons.Application.Clone();
     }
 
+    private static Forms.ContextMenuStrip CreateContextMenu()
+    {
+        var menu = new Forms.ContextMenuStrip
+        {
+            ShowImageMargin = false,
+            ShowCheckMargin = true,
+        };
+
+        if (Forms.SystemInformation.HighContrast)
+        {
+            return menu;
+        }
+
+        menu.BackColor = Color.FromArgb(32, 32, 32);
+        menu.ForeColor = Color.FromArgb(245, 245, 247);
+        menu.Renderer = new Forms.ToolStripProfessionalRenderer(new DarkMenuColorTable());
+
+        return menu;
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -128,5 +184,34 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.Dispose();
         _contextMenu.Dispose();
         _applicationIcon.Dispose();
+    }
+
+    private sealed class DarkMenuColorTable : Forms.ProfessionalColorTable
+    {
+        private static readonly Color Background = Color.FromArgb(32, 32, 32);
+        private static readonly Color Selection = Color.FromArgb(51, 74, 104);
+        private static readonly Color Border = Color.FromArgb(68, 68, 68);
+
+        public override Color ToolStripDropDownBackground => Background;
+
+        public override Color ImageMarginGradientBegin => Background;
+
+        public override Color ImageMarginGradientMiddle => Background;
+
+        public override Color ImageMarginGradientEnd => Background;
+
+        public override Color MenuBorder => Border;
+
+        public override Color MenuItemBorder => Selection;
+
+        public override Color MenuItemSelected => Selection;
+
+        public override Color MenuItemSelectedGradientBegin => Selection;
+
+        public override Color MenuItemSelectedGradientEnd => Selection;
+
+        public override Color SeparatorDark => Border;
+
+        public override Color SeparatorLight => Background;
     }
 }

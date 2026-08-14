@@ -92,15 +92,16 @@
 
       <Grid Grid.Row="1" Margin="16,7,16,7">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="1" />
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="1" />
-          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="{Binding FiveHourColumnWidth}" />
+          <ColumnDefinition Width="{Binding FirstDividerWidth}" />
+          <ColumnDefinition Width="{Binding WeeklyColumnWidth}" />
+          <ColumnDefinition Width="{Binding SecondDividerWidth}" />
+          <ColumnDefinition Width="{Binding ResetTimesColumnWidth}" />
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0"
                     HorizontalAlignment="Center"
+                    Visibility="{Binding FiveHourVisibility}"
                     VerticalAlignment="Center">
           <TextBlock HorizontalAlignment="Center"
                      Foreground="{StaticResource SecondaryTextBrush}"
@@ -118,6 +119,7 @@
 
         <StackPanel Grid.Column="2"
                     HorizontalAlignment="Center"
+                    Visibility="{Binding WeeklyVisibility}"
                     VerticalAlignment="Center">
           <TextBlock HorizontalAlignment="Center"
                      Foreground="{StaticResource SecondaryTextBrush}"
@@ -135,6 +137,7 @@
 
         <StackPanel Grid.Column="4"
                     HorizontalAlignment="Center"
+                    Visibility="{Binding ResetTimesVisibility}"
                     VerticalAlignment="Center">
           <TextBlock HorizontalAlignment="Center"
                      Foreground="{StaticResource SecondaryTextBrush}"
@@ -177,6 +180,7 @@
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <StackPanel VerticalAlignment="Center"
+                      Visibility="{Binding SubscriptionVisibility}"
                       Orientation="Horizontal">
             <TextBlock VerticalAlignment="Center"
                        Foreground="{StaticResource SecondaryTextBrush}"

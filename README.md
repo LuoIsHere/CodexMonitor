@@ -1,27 +1,30 @@
 # CodexMonitor
 
-CodexMonitor is a small personal Windows utility that displays the current Codex usage limits in a regular WPF window. It shows the short-period quota, weekly quota, reset countdowns, last refresh time, and current read status.
+CodexMonitor is a small personal Windows utility that displays current Codex usage limits in a compact WPF window. It shows the short-period quota, weekly quota, quota reset times, subscription type, last refresh time, and current read status.
 
-Current version: `0.2.1`
+Current version: `0.2.3`
 
 ![CodexMonitor dashboard showing Codex quota usage](assets/screenshots/codex-monitor-dashboard.png)
 
 ## Features
 
-- Shows the remaining percentage and reset countdown for the approximately five-hour quota window (`5H`).
-- Shows the remaining percentage and reset countdown for the weekly quota window (`WK`).
-- Shows the latest successful refresh time (`REF`) and read status.
+- Shows the remaining percentage for the approximately five-hour quota window (`5H`).
+- Shows the remaining percentage for the seven-day quota window (`7D`).
+- Shows the local reset timestamps for both quota windows.
+- Shows the latest successful refresh time and read status.
 - Shows the active ChatGPT subscription plan or token/API-key login type.
-- Displays `None` for quota values, reset countdowns, and refresh time when Codex uses token/API-key authentication.
+- Uses native Windows Acrylic when transparency effects are enabled and a dark translucent fallback otherwise.
+- Displays `None` for quota values and refresh time, and `-` for reset times, when Codex uses token/API-key authentication.
 - Reads data once at startup, then refreshes every three minutes by default.
-- Uses a one-second UI timer only to update local countdowns; it does not query Codex every second.
+- Provides a settings window for notification behavior, a 1-to-60-minute refresh interval, and visible data sections.
 - Supports an immediate manual refresh.
 - Keeps the latest valid snapshot when a later refresh fails.
 - Remains active in the Windows notification area after the main window is closed.
 - Restores the main window with a left click on the notification-area icon.
-- Provides notification-area commands to open the window, refresh immediately, or exit the application.
+- Provides a dark notification-area menu for minimizing, opening settings, and exiting the application.
+- Prevents duplicate background instances; launching the app again restores the already running window.
 
-Version 0.2.1 does not include taskbar docking, a settings UI, an installer, automatic startup, or automatic updates.
+Version 0.2.3 reserves a floating-window interface but does not yet implement the floating window. It also does not include taskbar docking, an installer, automatic startup, or automatic updates.
 
 ## System requirements
 
@@ -32,7 +35,7 @@ Version 0.2.1 does not include taskbar docking, a settings UI, an installer, aut
 
 ## Tested Codex version
 
-CodexMonitor 0.2.1 has been verified with:
+CodexMonitor 0.2.3 has been verified with:
 
 - Codex for Windows: `codex-cli 0.147.0-alpha.6.6`
 
@@ -45,7 +48,9 @@ Other Codex versions may work, but the local app-server protocol can change betw
 3. The application locates the executable copy supplied by Codex for Windows, preferring `%LOCALAPPDATA%\OpenAI\Codex\bin`, and reads the current limits.
 4. Select **Refresh now** to request fresh data immediately.
 
-Closing the window hides it in the Windows notification area while background quota refreshes continue. Left-click the notification-area icon to restore the window. Use **Exit** from the icon's context menu to stop background work and exit the application.
+Closing the window hides it in the Windows notification area while background quota refreshes continue. Left-click the notification-area icon to restore the window. Right-click the icon to minimize the visible window, open **Settings**, or use **Exit application** to stop background work and exit. The floating-window item is intentionally unavailable in this version.
+
+If CodexMonitor is already running, launching it again activates the existing window instead of starting another monitor process.
 
 ## Settings
 
@@ -55,20 +60,31 @@ The first run creates:
 %LOCALAPPDATA%\CodexMonitor\settings.json
 ```
 
-Version 0.2.1 has no settings UI. Exit the application and edit the file manually:
+Open **Settings** from the notification-area menu to change notifications, the automatic refresh interval, and visible data sections. The same values are stored in:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "refreshIntervalMinutes": 3,
-  "codexExecutable": null
+  "codexExecutable": null,
+  "notifications": {
+    "enabled": true
+  },
+  "display": {
+    "showFiveHourQuota": true,
+    "showWeeklyQuota": true,
+    "showResetTimes": true,
+    "showSubscription": true
+  }
 }
 ```
 
-- `refreshIntervalMinutes`: 1 to 60 minutes. Values outside this range are clamped automatically.
+- `refreshIntervalMinutes`: 1 to 60 minutes. Changes made in the settings window take effect immediately and restart the interval from the save time without forcing an immediate quota request.
 - `codexExecutable`: optional absolute path to `codex.exe`; normally leave this as `null`.
+- `notifications.enabled`: controls all notification balloons; refresh errors are still logged when disabled.
+- `display`: controls the main-window data sections. Refresh time and status always remain visible.
 
-Restart the application after changing settings.
+Schema 1 files remain compatible. If the JSON file is edited manually, restart the application to reload it.
 
 ## Implementation
 
@@ -76,7 +92,7 @@ The application uses .NET 10 and WPF and is divided into three main projects:
 
 - `CodexMonitor.Core`: quota models, display formatting, and refresh state management.
 - `CodexMonitor.Infrastructure`: Codex process communication, JSON parsing, settings, and logging.
-- `CodexMonitor.App`: the WPF window, notification-area lifecycle, background refresh ownership, and one-second countdown updates.
+- `CodexMonitor.App`: WPF windows, notification-area lifecycle, runtime settings, single-instance activation, and background refresh scheduling.
 
 Quota reads start the local process:
 
@@ -150,6 +166,10 @@ The initial product ideas were inspired by:
 
 - [DiMY-CN/CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor): presenting Codex quota windows and obtaining quota data through the local Codex app-server.
 - [zhongyang219/TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor): the concept of a lightweight, readily accessible Windows monitor.
+
+## Changelog
+
+The root [CHANGELOG.md](CHANGELOG.md) contains only the current release. For the complete history, see [src/CHANGELOG.md](src/CHANGELOG.md) or [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases).
 
 ## License
 
