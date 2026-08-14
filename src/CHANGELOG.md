@@ -1,5 +1,23 @@
 # Complete Changelog
 
+## 0.3.0 - 2026-08-14
+
+### Added
+
+- Added a compact rounded translucent floating window for the 5-hour quota, 7-day quota, and latest successful refresh time.
+- Added independent floating-window display settings for quota values, refresh time, reset times, and subscription type.
+- Added unlocked mouse dragging with persisted window position and virtual-screen boundary recovery; enable the floating window from the notification-area menu or the floating-window settings page, then drag it with the left mouse button.
+- Added a locked click-through mode using user-level Windows extended styles to keep the window above other windows while passing mouse input to the application underneath.
+- Added notification-area commands to enable, lock, and unlock the floating window, ensuring it can be unlocked after mouse input starts passing through.
+- Added schema 2 migration and schema 3 roundtrip coverage to the offline settings tests.
+
+### Changed
+
+- Replaced the reserved floating-window service with a lifecycle-managed implementation that shares the main refresh state.
+- Upgraded `settings.json` to schema 3 while preserving schema 1 and schema 2 compatibility.
+- Updated the settings window with separate general and floating-window pages.
+- Aligned floating-window headings and values on shared rows with consistent font size and line height.
+
 ## 0.2.3 - 2026-08-14
 
 ### Added

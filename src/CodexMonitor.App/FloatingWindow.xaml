@@ -1,0 +1,176 @@
+<Window x:Class="LuoIsHere.CodexMonitor.App.FloatingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CodexMonitor Floating Window"
+        Width="252"
+        SizeToContent="Height"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Foreground="{StaticResource PrimaryTextBrush}"
+        ResizeMode="NoResize"
+        ShowActivated="False"
+        ShowInTaskbar="False"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        WindowStyle="None"
+        MouseLeftButtonDown="OnMouseLeftButtonDown">
+  <Border Background="#C9161618"
+          BorderBrush="#42FFFFFF"
+          BorderThickness="1"
+          CornerRadius="6"
+          Padding="10,7">
+    <StackPanel>
+      <Grid HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="12" />
+          <RowDefinition Height="21" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="0"
+                   MinWidth="54"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Text="5H"
+                   Visibility="{Binding FiveHourVisibility}" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="0"
+                   MinWidth="54"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Bottom"
+                   FontSize="15"
+                   FontWeight="SemiBold"
+                   LineHeight="19"
+                   LineStackingStrategy="BlockLineHeight"
+                   Text="{Binding FiveHourPercent}"
+                   Visibility="{Binding FiveHourVisibility}" />
+
+        <Border Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Width="1"
+                Height="27"
+                Margin="7,1"
+                Background="{StaticResource DividerBrush}"
+                Visibility="{Binding FirstDividerVisibility}" />
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="2"
+                   MinWidth="54"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Text="7D"
+                   Visibility="{Binding WeeklyVisibility}" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="2"
+                   MinWidth="54"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Bottom"
+                   FontSize="15"
+                   FontWeight="SemiBold"
+                   LineHeight="19"
+                   LineStackingStrategy="BlockLineHeight"
+                   Text="{Binding WeeklyPercent}"
+                   Visibility="{Binding WeeklyVisibility}" />
+
+        <Border Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="3"
+                Width="1"
+                Height="27"
+                Margin="7,1"
+                Background="{StaticResource DividerBrush}"
+                Visibility="{Binding SecondDividerVisibility}" />
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="4"
+                   MinWidth="68"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Text="UPDATED"
+                   Visibility="{Binding LastRefreshVisibility}" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="4"
+                   MinWidth="68"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Bottom"
+                   FontSize="15"
+                   FontWeight="SemiBold"
+                   LineHeight="19"
+                   LineStackingStrategy="BlockLineHeight"
+                   Text="{Binding LastRefreshText}"
+                   Visibility="{Binding LastRefreshVisibility}" />
+      </Grid>
+
+      <Grid Margin="1,6,1,0"
+            Visibility="{Binding ResetTimesVisibility}">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Grid.RowSpan="2"
+                   VerticalAlignment="Center"
+                   Text="RESET" />
+        <TextBlock Grid.Row="0"
+                   Grid.Column="2"
+                   Margin="0,0,5,0"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   Text="5H" />
+        <TextBlock Grid.Row="0"
+                   Grid.Column="3"
+                   FontSize="10"
+                   Text="{Binding FiveHourResetTime}" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="2"
+                   Margin="0,2,5,0"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   Text="7D" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="3"
+                   Margin="0,2,0,0"
+                   FontSize="10"
+                   Text="{Binding WeeklyResetTime}" />
+      </Grid>
+
+      <StackPanel Margin="1,6,1,0"
+                  Orientation="Horizontal"
+                  Visibility="{Binding SubscriptionVisibility}">
+        <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Text="SUBSCRIPTION" />
+        <TextBlock Margin="7,0,0,0"
+                   FontSize="10"
+                   FontWeight="SemiBold"
+                   Text="{Binding AccountText}" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

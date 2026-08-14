@@ -1,22 +1,29 @@
+using LuoIsHere.CodexMonitor.Infrastructure.Settings;
+
 namespace LuoIsHere.CodexMonitor.App;
 
-public interface IFloatingWindowService
+public interface IFloatingWindowService : IDisposable
 {
     bool IsAvailable { get; }
 
     bool IsEnabled { get; }
 
+    bool IsLocked { get; }
+
+    FloatingWindowSettings CurrentSettings { get; }
+
+    event EventHandler? StateChanged;
+
+    event EventHandler<FloatingWindowSettingsChangedEventArgs>? SettingsChanged;
+
     void SetEnabled(bool enabled);
+
+    void SetLocked(bool isLocked);
+
+    void ApplySettings(FloatingWindowSettings settings);
 }
 
-internal sealed class UnavailableFloatingWindowService : IFloatingWindowService
+public sealed class FloatingWindowSettingsChangedEventArgs(FloatingWindowSettings settings) : EventArgs
 {
-    public bool IsAvailable => false;
-
-    public bool IsEnabled => false;
-
-    public void SetEnabled(bool enabled)
-    {
-        // The contract is reserved for a later floating-window implementation.
-    }
+    public FloatingWindowSettings Settings { get; } = settings;
 }

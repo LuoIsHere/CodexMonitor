@@ -20,7 +20,8 @@ var tests = new (string Name, Action Run)[]
     ("signed-out account response", TestSignedOutAccountResponse),
     ("token display suppression", TestTokenDisplaySuppression),
     ("schema 1 settings migration", TestSchemaOneSettingsMigration),
-    ("schema 2 settings roundtrip", TestSchemaTwoSettingsRoundtrip),
+    ("schema 2 settings migration", TestSchemaTwoSettingsMigration),
+    ("schema 3 settings roundtrip", TestSchemaThreeSettingsRoundtrip),
 };
 
 if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
@@ -267,17 +268,51 @@ static void TestSchemaOneSettingsMigration()
             """);
 
         var settings = new JsonSettingsStore(new SilentLogger()).LoadAsync().GetAwaiter().GetResult();
-        Equal(2, settings.SchemaVersion, "migrated schema version");
+        Equal(3, settings.SchemaVersion, "migrated schema version");
         Equal(1, settings.RefreshIntervalMinutes, "clamped legacy refresh interval");
         Equal(true, settings.Notifications.Enabled, "legacy notification default");
         Equal(true, settings.Display.ShowFiveHourQuota, "legacy 5H display default");
         Equal(true, settings.Display.ShowWeeklyQuota, "legacy 7D display default");
         Equal(true, settings.Display.ShowResetTimes, "legacy reset display default");
         Equal(true, settings.Display.ShowSubscription, "legacy subscription display default");
+        Equal(false, settings.FloatingWindow.Enabled, "legacy floating window default");
+        Equal(true, settings.FloatingWindow.Display.ShowFiveHourQuota, "legacy floating 5H default");
+        Equal(true, settings.FloatingWindow.Display.ShowWeeklyQuota, "legacy floating 7D default");
+        Equal(true, settings.FloatingWindow.Display.ShowLastRefreshTime, "legacy floating refresh time default");
     });
 }
 
-static void TestSchemaTwoSettingsRoundtrip()
+static void TestSchemaTwoSettingsMigration()
+{
+    WithTemporarySettingsDirectory(directory =>
+    {
+        File.WriteAllText(
+            Path.Combine(directory, "settings.json"),
+            """
+            {
+              "schemaVersion": 2,
+              "refreshIntervalMinutes": 9,
+              "notifications": { "enabled": false },
+              "display": {
+                "showFiveHourQuota": false,
+                "showWeeklyQuota": true,
+                "showResetTimes": false,
+                "showSubscription": true
+              }
+            }
+            """);
+
+        var settings = new JsonSettingsStore(new SilentLogger()).LoadAsync().GetAwaiter().GetResult();
+        Equal(3, settings.SchemaVersion, "schema 2 migrated version");
+        Equal(9, settings.RefreshIntervalMinutes, "schema 2 refresh interval");
+        Equal(false, settings.Notifications.Enabled, "schema 2 notification state");
+        Equal(false, settings.Display.ShowFiveHourQuota, "schema 2 main display state");
+        Equal(false, settings.FloatingWindow.Enabled, "schema 2 floating window default");
+        Equal(true, settings.FloatingWindow.Display.ShowLastRefreshTime, "schema 2 floating refresh time default");
+    });
+}
+
+static void TestSchemaThreeSettingsRoundtrip()
 {
     WithTemporarySettingsDirectory(_ =>
     {
@@ -292,18 +327,39 @@ static void TestSchemaTwoSettingsRoundtrip()
                 ShowResetTimes = false,
                 ShowSubscription = false,
             },
+            FloatingWindow = new FloatingWindowSettings
+            {
+                Enabled = true,
+                IsLocked = true,
+                Left = 123.5,
+                Top = 456.25,
+                Display = new FloatingWindowDisplaySettings
+                {
+                    ShowFiveHourQuota = true,
+                    ShowWeeklyQuota = false,
+                    ShowLastRefreshTime = false,
+                    ShowResetTimes = true,
+                    ShowSubscription = true,
+                },
+            },
         };
         var store = new JsonSettingsStore(new SilentLogger());
         store.SaveAsync(expected).GetAwaiter().GetResult();
         var actual = store.LoadAsync().GetAwaiter().GetResult();
 
-        Equal(2, actual.SchemaVersion, "saved schema version");
+        Equal(3, actual.SchemaVersion, "saved schema version");
         Equal(17, actual.RefreshIntervalMinutes, "saved refresh interval");
         Equal(false, actual.Notifications.Enabled, "saved notification state");
         Equal(false, actual.Display.ShowFiveHourQuota, "saved 5H state");
         Equal(true, actual.Display.ShowWeeklyQuota, "saved 7D state");
         Equal(false, actual.Display.ShowResetTimes, "saved reset state");
         Equal(false, actual.Display.ShowSubscription, "saved subscription state");
+        Equal(true, actual.FloatingWindow.Enabled, "saved floating window state");
+        Equal(true, actual.FloatingWindow.IsLocked, "saved floating lock state");
+        Equal(123.5, actual.FloatingWindow.Left, "saved floating left position");
+        Equal(456.25, actual.FloatingWindow.Top, "saved floating top position");
+        Equal(true, actual.FloatingWindow.Display.ShowResetTimes, "saved floating reset state");
+        Equal(true, actual.FloatingWindow.Display.ShowSubscription, "saved floating subscription state");
     });
 }
 

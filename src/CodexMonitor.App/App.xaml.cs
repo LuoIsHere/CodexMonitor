@@ -15,9 +15,11 @@ public partial class App : System.Windows.Application
     private SettingsWindow? _settingsWindow;
     private MainWindowViewModel? _viewModel;
     private TrayIconService? _trayIcon;
+    private IFloatingWindowService? _floatingWindowService;
     private SingleInstanceCoordinator? _singleInstance;
     private JsonSettingsStore? _settingsStore;
     private IAppLogger? _logger;
+    private readonly SemaphoreSlim _settingsSaveLock = new(1, 1);
     private AppSettings _settings = new();
     private bool _exitStarted;
     private bool _activationPending;
@@ -55,13 +57,18 @@ public partial class App : System.Windows.Application
                 CreateDisplayPreferences(_settings.Display));
             _viewModel.RefreshFailed += OnRefreshFailed;
 
+            _floatingWindowService = new FloatingWindowService(
+                _viewModel,
+                _settings.FloatingWindow);
+            _floatingWindowService.SettingsChanged += OnFloatingWindowSettingsChanged;
+
             _mainWindow = new MainWindow(_viewModel);
             _mainWindow.HiddenToTray += OnWindowHiddenToTray;
             _mainWindow.StateChanged += OnMainWindowStateChanged;
             _mainWindow.IsVisibleChanged += OnMainWindowIsVisibleChanged;
             MainWindow = _mainWindow;
 
-            _trayIcon = new TrayIconService(new UnavailableFloatingWindowService());
+            _trayIcon = new TrayIconService(_floatingWindowService);
             _trayIcon.OpenRequested += OnTrayOpenRequested;
             _trayIcon.MinimizeRequested += OnTrayMinimizeRequested;
             _trayIcon.SettingsRequested += OnTraySettingsRequested;
@@ -115,6 +122,14 @@ public partial class App : System.Windows.Application
         {
             _trayIcon?.ShowRefreshFailureNotification(e.Message);
         }
+    }
+
+    private async void OnFloatingWindowSettingsChanged(
+        object? sender,
+        FloatingWindowSettingsChangedEventArgs e)
+    {
+        _settings = _settings with { FloatingWindow = e.Settings };
+        await SaveCurrentSettingsWithoutDialogAsync();
     }
 
     private void OnActivationRequested(object? sender, EventArgs e)
@@ -179,11 +194,12 @@ public partial class App : System.Windows.Application
 
         try
         {
-            await _settingsStore.SaveAsync(saved);
             _settings = saved;
             _viewModel?.ApplyPreferences(
                 TimeSpan.FromMinutes(saved.RefreshIntervalMinutes),
                 CreateDisplayPreferences(saved.Display));
+            _floatingWindowService?.ApplySettings(saved.FloatingWindow);
+            await SaveCurrentSettingsAsync();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -220,7 +236,23 @@ public partial class App : System.Windows.Application
             _settingsWindow = null;
         }
 
+        try
+        {
+            await SaveCurrentSettingsAsync();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger?.Error("Settings could not be saved during shutdown.", exception);
+        }
+
         DisposeTrayIcon();
+
+        if (_floatingWindowService is not null)
+        {
+            _floatingWindowService.SettingsChanged -= OnFloatingWindowSettingsChanged;
+            _floatingWindowService.Dispose();
+            _floatingWindowService = null;
+        }
 
         if (_viewModel is not null)
         {
@@ -267,6 +299,41 @@ public partial class App : System.Windows.Application
         _singleInstance.ActivationRequested -= OnActivationRequested;
         await _singleInstance.DisposeAsync();
         _singleInstance = null;
+    }
+
+    private async Task SaveCurrentSettingsWithoutDialogAsync()
+    {
+        if (_settingsStore is null || _exitStarted)
+        {
+            return;
+        }
+
+        try
+        {
+            await SaveCurrentSettingsAsync();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger?.Error("Floating-window settings could not be saved.", exception);
+        }
+    }
+
+    private async Task SaveCurrentSettingsAsync()
+    {
+        if (_settingsStore is null)
+        {
+            return;
+        }
+
+        await _settingsSaveLock.WaitAsync();
+        try
+        {
+            await _settingsStore.SaveAsync(_settings);
+        }
+        finally
+        {
+            _settingsSaveLock.Release();
+        }
     }
 
     private static DisplayPreferences CreateDisplayPreferences(DisplaySettings settings)

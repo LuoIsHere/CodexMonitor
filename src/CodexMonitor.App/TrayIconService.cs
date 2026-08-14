@@ -10,6 +10,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Forms.ContextMenuStrip _contextMenu;
     private readonly Forms.ToolStripMenuItem _minimizeItem;
     private readonly Forms.ToolStripMenuItem _floatingWindowItem;
+    private readonly Forms.ToolStripMenuItem _floatingWindowLockItem;
     private readonly IFloatingWindowService _floatingWindowService;
     private bool _backgroundNotificationShown;
     private bool _disposed;
@@ -26,11 +27,16 @@ public sealed class TrayIconService : IDisposable
         {
             Checked = floatingWindowService.IsEnabled,
             Enabled = floatingWindowService.IsAvailable,
-            ToolTipText = floatingWindowService.IsAvailable
-                ? string.Empty
-                : "悬浮窗将在后续版本中提供。",
         };
         _floatingWindowItem.Click += OnFloatingWindowClick;
+
+        _floatingWindowLockItem = new Forms.ToolStripMenuItem("锁定悬浮窗")
+        {
+            Checked = floatingWindowService.IsLocked,
+            Enabled = floatingWindowService.IsAvailable && floatingWindowService.IsEnabled,
+        };
+        _floatingWindowLockItem.Click += OnFloatingWindowLockClick;
+        _floatingWindowService.StateChanged += OnFloatingWindowStateChanged;
 
         var settingsItem = new Forms.ToolStripMenuItem("设置");
         settingsItem.Click += OnSettingsClick;
@@ -41,6 +47,7 @@ public sealed class TrayIconService : IDisposable
         _contextMenu = CreateContextMenu();
         _contextMenu.Items.Add(_minimizeItem);
         _contextMenu.Items.Add(_floatingWindowItem);
+        _contextMenu.Items.Add(_floatingWindowLockItem);
         _contextMenu.Items.Add(settingsItem);
         _contextMenu.Items.Add(new Forms.ToolStripSeparator());
         _contextMenu.Items.Add(exitItem);
@@ -127,7 +134,29 @@ public sealed class TrayIconService : IDisposable
         }
 
         _floatingWindowService.SetEnabled(!_floatingWindowService.IsEnabled);
+    }
+
+    private void OnFloatingWindowLockClick(object? sender, EventArgs e)
+    {
+        if (!_floatingWindowService.IsAvailable || !_floatingWindowService.IsEnabled)
+        {
+            return;
+        }
+
+        _floatingWindowService.SetLocked(!_floatingWindowService.IsLocked);
+    }
+
+    private void OnFloatingWindowStateChanged(object? sender, EventArgs e)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
         _floatingWindowItem.Checked = _floatingWindowService.IsEnabled;
+        _floatingWindowLockItem.Checked = _floatingWindowService.IsLocked;
+        _floatingWindowLockItem.Enabled =
+            _floatingWindowService.IsAvailable && _floatingWindowService.IsEnabled;
     }
 
     private void OnSettingsClick(object? sender, EventArgs e)
@@ -179,6 +208,7 @@ public sealed class TrayIconService : IDisposable
         }
 
         _disposed = true;
+        _floatingWindowService.StateChanged -= OnFloatingWindowStateChanged;
         _notifyIcon.MouseClick -= OnMouseClick;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();

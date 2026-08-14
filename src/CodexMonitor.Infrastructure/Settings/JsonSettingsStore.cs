@@ -68,13 +68,30 @@ public sealed class JsonSettingsStore
     {
         return settings with
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             RefreshIntervalMinutes = Math.Clamp(settings.RefreshIntervalMinutes, 1, 60),
             CodexExecutable = string.IsNullOrWhiteSpace(settings.CodexExecutable)
                 ? null
                 : Environment.ExpandEnvironmentVariables(settings.CodexExecutable.Trim()),
             Notifications = settings.Notifications ?? new NotificationSettings(),
             Display = settings.Display ?? new DisplaySettings(),
+            FloatingWindow = NormalizeFloatingWindow(settings.FloatingWindow),
         };
     }
+
+    private static FloatingWindowSettings NormalizeFloatingWindow(FloatingWindowSettings? settings)
+    {
+        settings ??= new FloatingWindowSettings();
+        return settings with
+        {
+            Left = NormalizeCoordinate(settings.Left),
+            Top = NormalizeCoordinate(settings.Top),
+            Display = settings.Display ?? new FloatingWindowDisplaySettings(),
+        };
+    }
+
+    private static double? NormalizeCoordinate(double? coordinate)
+        => coordinate is double value && double.IsFinite(value)
+            ? value
+            : null;
 }

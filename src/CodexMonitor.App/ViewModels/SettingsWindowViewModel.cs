@@ -13,6 +13,13 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private bool _showWeeklyQuota;
     private bool _showResetTimes;
     private bool _showSubscription;
+    private bool _floatingWindowEnabled;
+    private bool _floatingWindowLocked;
+    private bool _floatingShowFiveHourQuota;
+    private bool _floatingShowWeeklyQuota;
+    private bool _floatingShowLastRefreshTime;
+    private bool _floatingShowResetTimes;
+    private bool _floatingShowSubscription;
 
     public SettingsWindowViewModel(AppSettings settings)
     {
@@ -23,6 +30,13 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         _showWeeklyQuota = settings.Display.ShowWeeklyQuota;
         _showResetTimes = settings.Display.ShowResetTimes;
         _showSubscription = settings.Display.ShowSubscription;
+        _floatingWindowEnabled = settings.FloatingWindow.Enabled;
+        _floatingWindowLocked = settings.FloatingWindow.IsLocked;
+        _floatingShowFiveHourQuota = settings.FloatingWindow.Display.ShowFiveHourQuota;
+        _floatingShowWeeklyQuota = settings.FloatingWindow.Display.ShowWeeklyQuota;
+        _floatingShowLastRefreshTime = settings.FloatingWindow.Display.ShowLastRefreshTime;
+        _floatingShowResetTimes = settings.FloatingWindow.Display.ShowResetTimes;
+        _floatingShowSubscription = settings.FloatingWindow.Display.ShowSubscription;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -63,10 +77,52 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         set => SetField(ref _showSubscription, value);
     }
 
+    public bool FloatingWindowEnabled
+    {
+        get => _floatingWindowEnabled;
+        set => SetField(ref _floatingWindowEnabled, value);
+    }
+
+    public bool FloatingWindowLocked
+    {
+        get => _floatingWindowLocked;
+        set => SetField(ref _floatingWindowLocked, value);
+    }
+
+    public bool FloatingShowFiveHourQuota
+    {
+        get => _floatingShowFiveHourQuota;
+        set => SetField(ref _floatingShowFiveHourQuota, value);
+    }
+
+    public bool FloatingShowWeeklyQuota
+    {
+        get => _floatingShowWeeklyQuota;
+        set => SetField(ref _floatingShowWeeklyQuota, value);
+    }
+
+    public bool FloatingShowLastRefreshTime
+    {
+        get => _floatingShowLastRefreshTime;
+        set => SetField(ref _floatingShowLastRefreshTime, value);
+    }
+
+    public bool FloatingShowResetTimes
+    {
+        get => _floatingShowResetTimes;
+        set => SetField(ref _floatingShowResetTimes, value);
+    }
+
+    public bool FloatingShowSubscription
+    {
+        get => _floatingShowSubscription;
+        set => SetField(ref _floatingShowSubscription, value);
+    }
+
     public AppSettings CreateSettings()
         => _sourceSettings with
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             RefreshIntervalMinutes = RefreshIntervalMinutes,
             Notifications = new NotificationSettings
             {
@@ -78,6 +134,19 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
                 ShowWeeklyQuota = ShowWeeklyQuota,
                 ShowResetTimes = ShowResetTimes,
                 ShowSubscription = ShowSubscription,
+            },
+            FloatingWindow = _sourceSettings.FloatingWindow with
+            {
+                Enabled = FloatingWindowEnabled,
+                IsLocked = FloatingWindowLocked,
+                Display = new FloatingWindowDisplaySettings
+                {
+                    ShowFiveHourQuota = FloatingShowFiveHourQuota,
+                    ShowWeeklyQuota = FloatingShowWeeklyQuota,
+                    ShowLastRefreshTime = FloatingShowLastRefreshTime,
+                    ShowResetTimes = FloatingShowResetTimes,
+                    ShowSubscription = FloatingShowSubscription,
+                },
             },
         };
 

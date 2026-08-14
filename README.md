@@ -2,7 +2,7 @@
 
 CodexMonitor is a small personal Windows utility that displays current Codex usage limits in a compact WPF window. It shows the short-period quota, weekly quota, quota reset times, subscription type, last refresh time, and current read status.
 
-Current version: `0.2.3`
+Current version: `0.3.0`
 
 ![CodexMonitor dashboard showing Codex quota usage](assets/screenshots/codex-monitor-dashboard.png)
 
@@ -23,19 +23,38 @@ Current version: `0.2.3`
 - Restores the main window with a left click on the notification-area icon.
 - Provides a dark notification-area menu for minimizing, opening settings, and exiting the application.
 - Prevents duplicate background instances; launching the app again restores the already running window.
+- Provides a compact, rounded, translucent floating window that reuses the main refresh state without making extra quota requests.
+- Lets the floating window show independently selected quota, refresh-time, reset-time, and subscription fields.
+- Supports an unlocked draggable mode and a locked click-through, always-on-top mode.
 
-Version 0.2.3 reserves a floating-window interface but does not yet implement the floating window. It also does not include taskbar docking, an installer, automatic startup, or automatic updates.
+Version 0.3.0 does not include taskbar docking, an installer, automatic startup, or automatic updates.
 
 ## System requirements
 
 - Windows 10 version 1809 or later; Windows 11 is recommended.
 - x64 system.
 - Codex for Windows installed and signed in.
-- The framework-dependent package requires the .NET 10 Desktop Runtime x64. The self-contained package does not require a separately installed runtime.
+- The framework-dependent packages require the **.NET 10 Desktop Runtime x64**. Installing only the base .NET Runtime or ASP.NET Core Runtime is not sufficient for this WPF application.
+- The self-contained packages include the required .NET 10 desktop runtime components and do not require a separately installed .NET runtime or SDK.
+
+## Release packages and .NET 10
+
+CodexMonitor targets `net10.0-windows` and uses WPF. End users only need the .NET 10 Desktop Runtime x64 when choosing a framework-dependent package. The .NET 10 SDK is required to build the source code, but it is not required to run any self-contained package.
+
+| Package | Separate .NET 10 installation | Contents and intended use |
+| --- | --- | --- |
+| Self-contained single EXE | Not required | One large executable containing the application and required runtime components. This is the simplest download for most users. |
+| Framework-dependent single EXE | **.NET 10 Desktop Runtime x64 required** | One smaller executable. Choose this when the required desktop runtime is already installed. |
+| Self-contained ZIP | Not required | An extracted application directory containing `CodexMonitor.exe`, runtime files, README, changelog, and license. Useful when the packaged files should remain visible. |
+| Framework-dependent ZIP | **.NET 10 Desktop Runtime x64 required** | The smallest archive. Extract it before use; the directory contains `CodexMonitor.exe`, managed dependencies, runtime metadata, and public documents. |
+
+All four packages provide the same CodexMonitor features. The differences are whether the .NET 10 desktop runtime is bundled and whether the application is delivered as one EXE or as an extracted directory. Do not run an executable directly from inside a ZIP file; extract the ZIP first.
+
+For the easiest setup, use the self-contained single EXE. If the .NET 10 Desktop Runtime x64 is already installed and download size matters, use the framework-dependent single EXE.
 
 ## Tested Codex version
 
-CodexMonitor 0.2.3 has been verified with:
+CodexMonitor 0.3.0 has been verified with:
 
 - Codex for Windows: `codex-cli 0.147.0-alpha.6.6`
 
@@ -48,9 +67,21 @@ Other Codex versions may work, but the local app-server protocol can change betw
 3. The application locates the executable copy supplied by Codex for Windows, preferring `%LOCALAPPDATA%\OpenAI\Codex\bin`, and reads the current limits.
 4. Select **Refresh now** to request fresh data immediately.
 
-Closing the window hides it in the Windows notification area while background quota refreshes continue. Left-click the notification-area icon to restore the window. Right-click the icon to minimize the visible window, open **Settings**, or use **Exit application** to stop background work and exit. The floating-window item is intentionally unavailable in this version.
+Closing the window hides it in the Windows notification area while background quota refreshes continue. Left-click the notification-area icon to restore the window. Right-click the icon to minimize the visible window, enable or lock the floating window, open **Settings**, or use **Exit application** to stop background work and exit.
+
+The floating window is disabled by default. When enabled and unlocked, drag it with the left mouse button. Locking it makes mouse input pass through to applications underneath and keeps the floating window above other windows. Use the notification-area menu to unlock it again.
 
 If CodexMonitor is already running, launching it again activates the existing window instead of starting another monitor process.
+
+## Floating window
+
+![CodexMonitor floating window showing Codex quota usage](assets/screenshots/codex-monitor-floating-window.png)
+
+The floating window is a compact view of the existing quota state. It shares the main window's refresh schedule and latest successful snapshot, so enabling it does not create another timer or make additional Codex requests. Its visible fields can be configured independently to include the 5-hour quota, 7-day quota, latest successful refresh time, quota reset times, and subscription type.
+
+Enable or disable it from the notification-area menu, or from the **Floating window** page in **Settings**. While unlocked, hold the left mouse button anywhere on the floating window to drag it; the last position is saved and restored on the next launch.
+
+Locking the floating window makes it click-through and always on top. Mouse input then goes directly to the window underneath, so the floating window cannot be selected or dragged. To unlock it, right-click the CodexMonitor notification-area icon and clear **Lock floating window**, or change the lock option in **Settings**.
 
 ## Settings
 
@@ -60,11 +91,11 @@ The first run creates:
 %LOCALAPPDATA%\CodexMonitor\settings.json
 ```
 
-Open **Settings** from the notification-area menu to change notifications, the automatic refresh interval, and visible data sections. The same values are stored in:
+Open **Settings** from the notification-area menu to change notifications, the automatic refresh interval, main-window content, and floating-window behavior. The floating-window page controls its enabled and locked state separately from its visible fields. The same values are stored in:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "refreshIntervalMinutes": 3,
   "codexExecutable": null,
   "notifications": {
@@ -75,6 +106,19 @@ Open **Settings** from the notification-area menu to change notifications, the a
     "showWeeklyQuota": true,
     "showResetTimes": true,
     "showSubscription": true
+  },
+  "floatingWindow": {
+    "enabled": false,
+    "isLocked": false,
+    "left": null,
+    "top": null,
+    "display": {
+      "showFiveHourQuota": true,
+      "showWeeklyQuota": true,
+      "showLastRefreshTime": true,
+      "showResetTimes": false,
+      "showSubscription": false
+    }
   }
 }
 ```
@@ -83,8 +127,9 @@ Open **Settings** from the notification-area menu to change notifications, the a
 - `codexExecutable`: optional absolute path to `codex.exe`; normally leave this as `null`.
 - `notifications.enabled`: controls all notification balloons; refresh errors are still logged when disabled.
 - `display`: controls the main-window data sections. Refresh time and status always remain visible.
+- `floatingWindow`: controls whether the compact window is visible or click-through locked, remembers its last dragged position, and defines its independently visible fields.
 
-Schema 1 files remain compatible. If the JSON file is edited manually, restart the application to reload it.
+Schema 1 and schema 2 files remain compatible. If the JSON file is edited manually, restart the application to reload it.
 
 ## Implementation
 
@@ -92,7 +137,7 @@ The application uses .NET 10 and WPF and is divided into three main projects:
 
 - `CodexMonitor.Core`: quota models, display formatting, and refresh state management.
 - `CodexMonitor.Infrastructure`: Codex process communication, JSON parsing, settings, and logging.
-- `CodexMonitor.App`: WPF windows, notification-area lifecycle, runtime settings, single-instance activation, and background refresh scheduling.
+- `CodexMonitor.App`: WPF windows, notification-area lifecycle, floating-window interaction, runtime settings, single-instance activation, and background refresh scheduling.
 
 Quota reads start the local process:
 
@@ -117,6 +162,7 @@ The application:
 - Does not send quota, account, or device data to third parties.
 - Starts a local Codex app-server child process and closes it after the read completes.
 - Keeps its own user-level process running while the main window is hidden in the notification area.
+- Uses standard user-level window styles for floating-window topmost and mouse click-through behavior; it does not install hooks or inject code into other processes.
 - Writes only its local settings and log directory.
 - Has no telemetry, automatic update, browser access, or remote-control feature.
 
@@ -176,3 +222,11 @@ The root [CHANGELOG.md](CHANGELOG.md) contains only the current release. For the
 [MIT](LICENSE)
 
 Copyright (c) 2026 luoishere
+
+## Disclaimer
+
+This is a personal project created by a non-professional developer with assistance from OpenAI Codex. Although reasonable efforts have been made to review and test the code, software developed with AI assistance may still contain errors, security issues, compatibility problems, or unintended behavior.
+
+To the best of the author's knowledge and intent, no malicious functionality has been intentionally included. This statement describes the author's intent and is not a guarantee that the software is free from defects or security risks.
+
+Use this software at your own risk. You are responsible for reviewing the source code, understanding its permission and privacy boundaries, and deciding whether it is appropriate for your environment. The software is provided "as is," without warranty, as further described in the MIT License.
