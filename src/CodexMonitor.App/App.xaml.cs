@@ -7,8 +7,13 @@ using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 namespace LuoIsHere.CodexMonitor.App;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
+    private MainWindow? _mainWindow;
+    private MainWindowViewModel? _viewModel;
+    private TrayIconService? _trayIcon;
+    private bool _exitStarted;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -22,17 +27,25 @@ public partial class App : Application
                 settings.CodexExecutable,
                 logger);
             var refreshService = new QuotaRefreshService(provider, logger);
-            var viewModel = new MainWindowViewModel(
+            _viewModel = new MainWindowViewModel(
                 refreshService,
                 TimeSpan.FromMinutes(settings.RefreshIntervalMinutes));
 
-            var window = new MainWindow(viewModel);
-            MainWindow = window;
-            window.Show();
+            _mainWindow = new MainWindow(_viewModel);
+            _mainWindow.HiddenToTray += OnWindowHiddenToTray;
+            MainWindow = _mainWindow;
+
+            _trayIcon = new TrayIconService();
+            _trayIcon.OpenRequested += OnTrayOpenRequested;
+            _trayIcon.RefreshRequested += OnTrayRefreshRequested;
+            _trayIcon.ExitRequested += OnTrayExitRequested;
+
+            _mainWindow.Show();
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
+            DisposeTrayIcon();
+            System.Windows.MessageBox.Show(
                 $"CodexMonitor 启动失败。\n\n{exception.Message}",
                 "CodexMonitor",
                 MessageBoxButton.OK,
@@ -40,5 +53,61 @@ public partial class App : Application
             Shutdown(1);
         }
     }
-}
 
+    private void OnWindowHiddenToTray(object? sender, EventArgs e)
+        => _trayIcon?.ShowBackgroundNotificationOnce();
+
+    private void OnTrayOpenRequested(object? sender, EventArgs e)
+        => _mainWindow?.ShowFromTray();
+
+    private async void OnTrayRefreshRequested(object? sender, EventArgs e)
+    {
+        if (_viewModel is not null)
+        {
+            await _viewModel.RefreshAsync();
+        }
+    }
+
+    private async void OnTrayExitRequested(object? sender, EventArgs e)
+        => await ExitApplicationAsync();
+
+    private async Task ExitApplicationAsync()
+    {
+        if (_exitStarted)
+        {
+            return;
+        }
+
+        _exitStarted = true;
+        DisposeTrayIcon();
+
+        if (_viewModel is not null)
+        {
+            await _viewModel.DisposeAsync();
+            _viewModel = null;
+        }
+
+        if (_mainWindow is not null)
+        {
+            _mainWindow.HiddenToTray -= OnWindowHiddenToTray;
+            _mainWindow.CloseForExit();
+            _mainWindow = null;
+        }
+
+        Shutdown();
+    }
+
+    private void DisposeTrayIcon()
+    {
+        if (_trayIcon is null)
+        {
+            return;
+        }
+
+        _trayIcon.OpenRequested -= OnTrayOpenRequested;
+        _trayIcon.RefreshRequested -= OnTrayRefreshRequested;
+        _trayIcon.ExitRequested -= OnTrayExitRequested;
+        _trayIcon.Dispose();
+        _trayIcon = null;
+    }
+}

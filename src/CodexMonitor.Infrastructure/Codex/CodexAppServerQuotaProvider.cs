@@ -10,6 +10,8 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
     private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    private static readonly string ClientVersion =
+        typeof(CodexAppServerQuotaProvider).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
     private readonly CodexExecutableLocator _locator;
     private readonly string? _configuredExecutable;
     private readonly IAppLogger _logger;
@@ -96,7 +98,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
             reportStage("初始化");
             await SendRequestAsync(process, 1, "initialize", new
             {
-                clientInfo = new { name = "codex-monitor", version = "0.1.0" },
+                clientInfo = new { name = "codex-monitor", version = ClientVersion },
                 capabilities = new
                 {
                     experimentalApi = true,

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 - 2026-08-14
+
+### Added
+
+- Added a Windows notification-area icon that remains available when the main window is hidden.
+- Added left-click restoration of the main window from the notification-area icon.
+- Added notification-area commands to open the window, refresh quota data immediately, and exit the application.
+- Added a one-time notification explaining that CodexMonitor continues running after the window is closed.
+- Added a custom application icon for the executable, main window, and notification area.
+
+### Changed
+
+- Closing the main window now hides it instead of exiting, allowing scheduled quota refreshes to continue in the background.
+- Exiting from the notification-area menu now cancels active refresh work, disposes the icon, and closes the application cleanly.
+- Updated the application icon to use a transparent background in the executable, main window, notification area, and background-running notification.
+
 ## 0.1.0 - 2026-08-14
 
 ### Added

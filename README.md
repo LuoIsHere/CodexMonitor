@@ -2,7 +2,7 @@
 
 CodexMonitor is a small personal Windows utility that displays the current Codex usage limits in a regular WPF window. It shows the short-period quota, weekly quota, reset countdowns, last refresh time, and current read status.
 
-Current version: `0.1.0`
+Current version: `0.2.0`
 
 ## Features
 
@@ -13,8 +13,11 @@ Current version: `0.1.0`
 - Uses a one-second UI timer only to update local countdowns; it does not query Codex every second.
 - Supports an immediate manual refresh.
 - Keeps the latest valid snapshot when a later refresh fails.
+- Remains active in the Windows notification area after the main window is closed.
+- Restores the main window with a left click on the notification-area icon.
+- Provides notification-area commands to open the window, refresh immediately, or exit the application.
 
-Version 0.1.0 does not include taskbar docking, a notification-area icon, a settings UI, an installer, or automatic updates.
+Version 0.2.0 does not include taskbar docking, a settings UI, an installer, automatic startup, or automatic updates.
 
 ## System requirements
 
@@ -25,7 +28,7 @@ Version 0.1.0 does not include taskbar docking, a notification-area icon, a sett
 
 ## Tested Codex version
 
-CodexMonitor 0.1.0 has been verified with:
+CodexMonitor 0.2.0 has been verified with:
 
 - Codex for Windows: `codex-cli 0.147.0-alpha.6.6`
 
@@ -38,7 +41,7 @@ Other Codex versions may work, but the local app-server protocol can change betw
 3. The application locates the executable copy supplied by Codex for Windows, preferring `%LOCALAPPDATA%\OpenAI\Codex\bin`, and reads the current limits.
 4. Select **Refresh now** to request fresh data immediately.
 
-Closing the window exits the application.
+Closing the window hides it in the Windows notification area while background quota refreshes continue. Left-click the notification-area icon to restore the window. Use **Exit** from the icon's context menu to stop background work and exit the application.
 
 ## Settings
 
@@ -48,7 +51,7 @@ The first run creates:
 %LOCALAPPDATA%\CodexMonitor\settings.json
 ```
 
-Version 0.1.0 has no settings UI. Exit the application and edit the file manually:
+Version 0.2.0 has no settings UI. Exit the application and edit the file manually:
 
 ```json
 {
@@ -69,7 +72,7 @@ The application uses .NET 10 and WPF and is divided into three main projects:
 
 - `CodexMonitor.Core`: quota models, display formatting, and refresh state management.
 - `CodexMonitor.Infrastructure`: Codex process communication, JSON parsing, settings, and logging.
-- `CodexMonitor.App`: the regular WPF window and its one-second countdown updates.
+- `CodexMonitor.App`: the WPF window, notification-area lifecycle, background refresh ownership, and one-second countdown updates.
 
 Quota reads start the local process:
 
@@ -89,6 +92,7 @@ The application:
 - Does not read the Codex `auth.json` file or login tokens.
 - Does not send quota, account, or device data to third parties.
 - Starts a local Codex app-server child process and closes it after the read completes.
+- Keeps its own user-level process running while the main window is hidden in the notification area.
 - Writes only its local settings and log directory.
 - Has no telemetry, automatic update, browser access, or remote-control feature.
 

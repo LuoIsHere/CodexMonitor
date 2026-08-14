@@ -3,10 +3,17 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF owns process DPI awareness through app.manifest; WinForms is used only for NotifyIcon. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\CodexMonitor.ico</ApplicationIcon>
     <AssemblyName>CodexMonitor</AssemblyName>
     <RootNamespace>LuoIsHere.CodexMonitor.App</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\CodexMonitor.ico" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodexMonitor.Core\CodexMonitor.Core.csproj" />
     <ProjectReference Include="..\CodexMonitor.Infrastructure\CodexMonitor.Infrastructure.csproj" />

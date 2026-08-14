@@ -1,11 +1,12 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Threading;
 using LuoIsHere.CodexMonitor.Core.Formatting;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Core.Refresh;
+using MediaBrush = System.Windows.Media.Brush;
+using MediaBrushes = System.Windows.Media.Brushes;
 
 namespace LuoIsHere.CodexMonitor.App.ViewModels;
 
@@ -15,9 +16,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
     private readonly TimeSpan _refreshInterval;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly DispatcherTimer _clockTimer;
+    private readonly object _activeRefreshLock = new();
+    private readonly HashSet<Task> _activeRefreshTasks = [];
     private Task? _periodicTask;
     private QuotaMonitorState _state;
     private bool _started;
+    private bool _disposed;
 
     public MainWindowViewModel(QuotaRefreshService refreshService, TimeSpan refreshInterval)
     {
@@ -25,7 +29,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         _refreshInterval = refreshInterval;
         _state = refreshService.State;
         RefreshCommand = new AsyncCommand(
-            () => _refreshService.RefreshAsync(_lifetime.Token),
+            RefreshAsync,
             () => !_state.IsRefreshing);
         _clockTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -61,11 +65,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
             ? Snapshot is null ? "读取失败" : "数据可能已过期"
             : Snapshot is null ? "等待首次读取" : "正常";
 
-    public Brush StatusBrush => _state.IsRefreshing
-        ? Brushes.DodgerBlue
+    public MediaBrush StatusBrush => _state.IsRefreshing
+        ? MediaBrushes.DodgerBlue
         : _state.Error is not null
-            ? Snapshot is null ? Brushes.Firebrick : Brushes.DarkOrange
-            : Snapshot is null ? Brushes.Gray : Brushes.ForestGreen;
+            ? Snapshot is null ? MediaBrushes.Firebrick : MediaBrushes.DarkOrange
+            : Snapshot is null ? MediaBrushes.Gray : MediaBrushes.ForestGreen;
 
     public string ErrorText => _state.Error ?? string.Empty;
 
@@ -82,19 +86,51 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
         _started = true;
         _clockTimer.Start();
-        await _refreshService.RefreshAsync(_lifetime.Token);
+        await RefreshAsync();
         _periodicTask = _refreshService.RunPeriodicAsync(_refreshInterval, _lifetime.Token);
+    }
+
+    public Task RefreshAsync()
+    {
+        Task refreshTask;
+        lock (_activeRefreshLock)
+        {
+            if (_disposed)
+            {
+                return Task.CompletedTask;
+            }
+
+            refreshTask = _refreshService.RefreshAsync(_lifetime.Token);
+            _activeRefreshTasks.Add(refreshTask);
+        }
+
+        return AwaitAndUntrackRefreshAsync(refreshTask);
+    }
+
+    private async Task AwaitAndUntrackRefreshAsync(Task refreshTask)
+    {
+        try
+        {
+            await refreshTask;
+        }
+        finally
+        {
+            lock (_activeRefreshLock)
+            {
+                _activeRefreshTasks.Remove(refreshTask);
+            }
+        }
     }
 
     private void OnStateChanged(object? sender, QuotaMonitorState state)
     {
-        if (Application.Current.Dispatcher.CheckAccess())
+        if (System.Windows.Application.Current.Dispatcher.CheckAccess())
         {
             ApplyState(state);
         }
         else
         {
-            _ = Application.Current.Dispatcher.BeginInvoke(() => ApplyState(state));
+            _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ApplyState(state));
         }
     }
 
@@ -129,10 +165,31 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     public async ValueTask DisposeAsync()
     {
+        Task[] activeRefreshTasks;
+        lock (_activeRefreshLock)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            activeRefreshTasks = [.. _activeRefreshTasks];
+        }
+
         _clockTimer.Stop();
         _clockTimer.Tick -= OnClockTick;
         _refreshService.StateChanged -= OnStateChanged;
         await _lifetime.CancelAsync();
+
+        try
+        {
+            await Task.WhenAll(activeRefreshTasks);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during shutdown.
+        }
 
         if (_periodicTask is not null)
         {
@@ -150,4 +207,3 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         _lifetime.Dispose();
     }
 }
-
