@@ -1,0 +1,18 @@
+.vs/
+.idea/
+**/bin/
+**/obj/
+artifacts/
+publish/
+TestResults/
+*.user
+*.suo
+*.pdb
+
+# Local-only development records requested by the project owner.
+docs/
+
+# Runtime state must never be committed.
+settings.json
+logs/
+

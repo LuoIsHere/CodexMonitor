@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag, for example v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish release
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v(?<Version>\d+\.\d+\.\d+)$') {
+            throw "Release tag '$env:RELEASE_TAG' must use the vMAJOR.MINOR.PATCH format."
+          }
+
+          "VERSION=$($Matches.Version)" >> $env:GITHUB_ENV
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build .\CodexMonitor.sln -c Release --nologo
+
+      - name: Run tests
+        shell: pwsh
+        run: dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release --no-build
+
+      - name: Create release packages
+        shell: pwsh
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build\Publish.ps1 -Version $env:VERSION
+
+      - name: Verify release packages
+        shell: pwsh
+        run: |
+          $expectedFiles = @(
+            "CodexMonitor-$env:VERSION-win-x64-self-contained.exe",
+            "CodexMonitor-$env:VERSION-win-x64-framework-dependent.exe",
+            "CodexMonitor-$env:VERSION-win-x64-self-contained.zip",
+            "CodexMonitor-$env:VERSION-win-x64-framework-dependent.zip"
+          )
+
+          $missingFiles = $expectedFiles | Where-Object {
+            -not (Test-Path -LiteralPath (Join-Path "artifacts" $_) -PathType Leaf)
+          }
+
+          if ($missingFiles) {
+            throw "Missing release packages: $($missingFiles -join ', ')"
+          }
+
+          Get-ChildItem .\artifacts -File | Select-Object Name, Length
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(
+            ".\artifacts\CodexMonitor-$env:VERSION-win-x64-self-contained.exe",
+            ".\artifacts\CodexMonitor-$env:VERSION-win-x64-framework-dependent.exe",
+            ".\artifacts\CodexMonitor-$env:VERSION-win-x64-self-contained.zip",
+            ".\artifacts\CodexMonitor-$env:VERSION-win-x64-framework-dependent.zip"
+          )
+
+          gh release create $env:RELEASE_TAG $assets `
+            --verify-tag `
+            --title "CodexMonitor $env:VERSION" `
+            --notes-file .\CHANGELOG.md

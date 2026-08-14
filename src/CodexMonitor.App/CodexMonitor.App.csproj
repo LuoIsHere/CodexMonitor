@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>CodexMonitor</AssemblyName>
+    <RootNamespace>LuoIsHere.CodexMonitor.App</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodexMonitor.Core\CodexMonitor.Core.csproj" />
+    <ProjectReference Include="..\CodexMonitor.Infrastructure\CodexMonitor.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
