@@ -40,12 +40,12 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 
         try
         {
-            var result = await CallAppServerAsync(
+            var snapshot = await CallAppServerAsync(
                     executable,
                     currentStage => stage = currentStage,
                     timeout.Token)
                 .ConfigureAwait(false);
-            return QuotaReadResult.Success(RateLimitResponseParser.Parse(result));
+            return QuotaReadResult.Success(snapshot);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -62,7 +62,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
         }
     }
 
-    private static async Task<JsonElement> CallAppServerAsync(
+    private static async Task<QuotaSnapshot> CallAppServerAsync(
         string executable,
         Action<string> reportStage,
         CancellationToken cancellationToken)
@@ -105,22 +105,38 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
                     optOutNotificationMethods = Array.Empty<string>(),
                 },
             }, cancellationToken).ConfigureAwait(false);
-            await ReadResponseAsync(process, 1, cancellationToken).ConfigureAwait(false);
+            _ = await ReadRequiredResultAsync(process, 1, cancellationToken).ConfigureAwait(false);
 
             await SendNotificationAsync(process, "initialized", cancellationToken).ConfigureAwait(false);
 
-            reportStage("读取额度");
-            await SendRequestAsync(process, 2, "account/rateLimits/read", null, cancellationToken)
-                .ConfigureAwait(false);
-            var response = await ReadResponseAsync(process, 2, cancellationToken).ConfigureAwait(false);
-
-            if (!response.TryGetProperty("result", out var result))
+            reportStage("读取账号");
+            var account = await TryReadAccountAsync(process, 2, cancellationToken).ConfigureAwait(false);
+            if (account?.SuppressQuotaDisplay == true)
             {
-                throw new InvalidOperationException("Codex JSON-RPC 响应缺少 result");
+                reportStage("解析响应");
+                return new QuotaSnapshot(
+                    null,
+                    null,
+                    account,
+                    null,
+                    null,
+                    DateTimeOffset.Now);
             }
 
+            reportStage("读取额度");
+            await SendRequestAsync(process, 3, "account/rateLimits/read", null, cancellationToken)
+                .ConfigureAwait(false);
+            var result = await ReadRequiredResultAsync(process, 3, cancellationToken).ConfigureAwait(false);
+
             reportStage("解析响应");
-            return result.Clone();
+            var snapshot = RateLimitResponseParser.Parse(result);
+            if (account is not null)
+            {
+                account = account with { PlanType = account.PlanType ?? snapshot.PlanType };
+                snapshot = snapshot with { Account = account };
+            }
+
+            return snapshot;
         }
         finally
         {
@@ -134,6 +150,38 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
                 // The process can be terminated while stderr is still being read.
             }
         }
+    }
+
+    private static async Task<CodexAccountInfo?> TryReadAccountAsync(
+        Process process,
+        int id,
+        CancellationToken cancellationToken)
+    {
+        await SendRequestAsync(
+                process,
+                id,
+                "account/read",
+                new { refreshToken = false },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var response = await ReadResponseMessageAsync(process, id, cancellationToken).ConfigureAwait(false);
+        if (response.TryGetProperty("error", out var error))
+        {
+            if (TryGetRpcErrorCode(error) == -32601)
+            {
+                return null;
+            }
+
+            throw CreateRpcException(error);
+        }
+
+        if (!response.TryGetProperty("result", out var result))
+        {
+            throw new InvalidOperationException("Codex 账号响应缺少 result");
+        }
+
+        return AccountResponseParser.Parse(result);
     }
 
     private static async Task SendRequestAsync(
@@ -164,7 +212,26 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
         await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<JsonElement> ReadResponseAsync(
+    private static async Task<JsonElement> ReadRequiredResultAsync(
+        Process process,
+        int expectedId,
+        CancellationToken cancellationToken)
+    {
+        var response = await ReadResponseMessageAsync(process, expectedId, cancellationToken).ConfigureAwait(false);
+        if (response.TryGetProperty("error", out var error))
+        {
+            throw CreateRpcException(error);
+        }
+
+        if (!response.TryGetProperty("result", out var result))
+        {
+            throw new InvalidOperationException("Codex JSON-RPC 响应缺少 result");
+        }
+
+        return result.Clone();
+    }
+
+    private static async Task<JsonElement> ReadResponseMessageAsync(
         Process process,
         int expectedId,
         CancellationToken cancellationToken)
@@ -200,15 +267,20 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
                     continue;
                 }
 
-                if (root.TryGetProperty("error", out var error))
-                {
-                    throw new InvalidOperationException($"Codex JSON-RPC 错误：{error.GetRawText()}");
-                }
-
                 return root.Clone();
             }
         }
     }
+
+    private static int? TryGetRpcErrorCode(JsonElement error)
+        => error.ValueKind == JsonValueKind.Object &&
+           error.TryGetProperty("code", out var code) &&
+           code.TryGetInt32(out var value)
+            ? value
+            : null;
+
+    private static InvalidOperationException CreateRpcException(JsonElement error)
+        => new($"Codex JSON-RPC 错误：{error.GetRawText()}");
 
     private static void StopProcess(Process process)
     {

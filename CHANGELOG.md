@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.1 - 2026-08-14
+
+### Added
+
+- Added the active ChatGPT subscription plan or token/API-key login type to the main window.
+- Added account metadata reads through the local Codex app-server without directly accessing authentication files or credentials.
+
+### Changed
+
+- Token, API-key, signed-out, and other non-ChatGPT account types now display `None` for quota values, reset countdowns, and refresh time.
+- ChatGPT quota reads now reuse the account metadata result and are skipped when ChatGPT subscription quota does not apply.
+- Expanded the documented privacy boundary for authentication files, credential stores, API keys, tokens, and account email addresses.
+
 ## 0.2.0 - 2026-08-14
 
 ### Added
@@ -14,7 +27,7 @@
 
 - Closing the main window now hides it instead of exiting, allowing scheduled quota refreshes to continue in the background.
 - Exiting from the notification-area menu now cancels active refresh work, disposes the icon, and closes the application cleanly.
-- Updated the application icon to use a transparent background in the executable, main window, notification area, and background-running notification.
+- Updated the application icon to use a transparent background in the executable, main window, and notification area.
 
 ## 0.1.0 - 2026-08-14
 

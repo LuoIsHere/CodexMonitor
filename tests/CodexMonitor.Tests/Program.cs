@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Formatting;
+using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Infrastructure.Codex;
 
 var tests = new (string Name, Action Run)[]
@@ -13,6 +14,10 @@ var tests = new (string Name, Action Run)[]
     ("single weekly window", TestSingleWeeklyWindow),
     ("missing rate limits", TestMissingRateLimits),
     ("display formatting", TestDisplayFormatting),
+    ("ChatGPT account response", TestChatGptAccountResponse),
+    ("API key account response", TestApiKeyAccountResponse),
+    ("signed-out account response", TestSignedOutAccountResponse),
+    ("token display suppression", TestTokenDisplaySuppression),
 };
 
 if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
@@ -157,10 +162,97 @@ static void TestDisplayFormatting()
     Equal("unavailable", QuotaDisplayFormatter.FormatCountdown(null, DateTimeOffset.Now, true), "unavailable window");
 }
 
+static void TestChatGptAccountResponse()
+{
+    var account = ParseAccount("""
+        {
+          "account": {
+            "type": "chatgpt",
+            "email": "ignored@example.com",
+            "planType": "pro"
+          },
+          "requiresOpenaiAuth": true
+        }
+        """);
+
+    Equal(CodexAuthenticationType.ChatGpt, account.AuthenticationType, "ChatGPT authentication type");
+    Equal("pro", account.PlanType, "ChatGPT plan type");
+    Equal("ChatGPT Pro", QuotaDisplayFormatter.FormatAccount(account), "ChatGPT account display");
+    Equal(false, account.SuppressQuotaDisplay, "ChatGPT quota visibility");
+}
+
+static void TestApiKeyAccountResponse()
+{
+    var account = ParseAccount("""
+        {
+          "account": { "type": "apiKey" },
+          "requiresOpenaiAuth": true
+        }
+        """);
+
+    Equal(CodexAuthenticationType.ApiKey, account.AuthenticationType, "API key authentication type");
+    Equal("Token", QuotaDisplayFormatter.FormatAccount(account), "API key account display");
+    Equal(true, account.SuppressQuotaDisplay, "API key quota suppression");
+}
+
+static void TestSignedOutAccountResponse()
+{
+    var account = ParseAccount("""
+        {
+          "account": null,
+          "requiresOpenaiAuth": true
+        }
+        """);
+
+    Equal(CodexAuthenticationType.SignedOut, account.AuthenticationType, "signed-out authentication type");
+    Equal("Not signed in", QuotaDisplayFormatter.FormatAccount(account), "signed-out account display");
+}
+
+static void TestTokenDisplaySuppression()
+{
+    var account = ParseAccount("""
+        {
+          "account": {
+            "type": "chatgptAuthTokens",
+            "planType": "plus"
+          },
+          "requiresOpenaiAuth": true
+        }
+        """);
+    var window = new QuotaWindow(
+        "5H",
+        25,
+        75,
+        300,
+        DateTimeOffset.Now.AddHours(2));
+    var snapshot = new QuotaSnapshot(
+        "codex",
+        null,
+        account,
+        window,
+        window with { Label = "WK" },
+        DateTimeOffset.Now);
+
+    Equal(CodexAuthenticationType.Token, account.AuthenticationType, "token authentication type");
+    Equal("Token", QuotaDisplayFormatter.FormatAccount(account), "token account display");
+    Equal("None", QuotaDisplayFormatter.FormatPercent(snapshot, snapshot.FiveHour), "token remaining quota");
+    Equal(
+        "None",
+        QuotaDisplayFormatter.FormatCountdown(snapshot, snapshot.FiveHour, DateTimeOffset.Now, true),
+        "token reset countdown");
+    Equal("None", QuotaDisplayFormatter.FormatRefreshTime(snapshot), "token refresh time");
+}
+
 static LuoIsHere.CodexMonitor.Core.Models.QuotaSnapshot Parse(string json)
 {
     using var document = JsonDocument.Parse(json);
     return RateLimitResponseParser.Parse(document.RootElement, DateTimeOffset.UnixEpoch);
+}
+
+static CodexAccountInfo ParseAccount(string json)
+{
+    using var document = JsonDocument.Parse(json);
+    return AccountResponseParser.Parse(document.RootElement);
 }
 
 static void Equal<T>(T expected, T actual, string description)

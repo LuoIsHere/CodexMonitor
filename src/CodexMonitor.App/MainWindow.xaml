@@ -4,14 +4,15 @@
         Title="CodexMonitor"
         Icon="Assets/CodexMonitor.ico"
         Width="460"
-        Height="300"
+        Height="330"
         MinWidth="420"
-        MinHeight="270"
+        MinHeight="300"
         WindowStartupLocation="CenterScreen">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="16" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
@@ -29,6 +30,15 @@
     <Grid Grid.Row="2" Margin="0,4">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="54" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <TextBlock FontWeight="SemiBold" Text="PLAN" />
+      <TextBlock Grid.Column="1" Text="{Binding AccountText}" />
+    </Grid>
+
+    <Grid Grid.Row="3" Margin="0,4">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="54" />
         <ColumnDefinition Width="90" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
@@ -37,7 +47,7 @@
       <TextBlock Grid.Column="2" Text="{Binding FiveHourCountdown}" />
     </Grid>
 
-    <Grid Grid.Row="3" Margin="0,4">
+    <Grid Grid.Row="4" Margin="0,4">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="54" />
         <ColumnDefinition Width="90" />
@@ -48,7 +58,7 @@
       <TextBlock Grid.Column="2" Text="{Binding WeeklyCountdown}" />
     </Grid>
 
-    <Grid Grid.Row="4" Margin="0,4">
+    <Grid Grid.Row="5" Margin="0,4">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="54" />
         <ColumnDefinition Width="90" />
@@ -66,12 +76,12 @@
       <TextBlock Grid.Column="3" Text="{Binding StatusText}" />
     </Grid>
 
-    <TextBlock Grid.Row="6"
+    <TextBlock Grid.Row="7"
                Foreground="Firebrick"
                Text="{Binding ErrorText}"
                TextWrapping="Wrap" />
 
-    <StackPanel Grid.Row="8" Orientation="Horizontal">
+    <StackPanel Grid.Row="9" Orientation="Horizontal">
       <Button Width="100"
               Height="30"
               Command="{Binding RefreshCommand}"

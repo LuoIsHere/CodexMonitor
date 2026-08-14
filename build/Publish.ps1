@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.2.0",
+    [string]$Version = "0.2.1",
     [string]$Runtime = "win-x64",
     [string]$PackageSource = "https://api.nuget.org/v3/index.json"
 )

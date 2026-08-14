@@ -21,7 +21,7 @@ public static class RateLimitResponseParser
         return new QuotaSnapshot(
             GetString(rateLimits, "limitId"),
             GetString(rateLimits, "limitName"),
-            GetString(rateLimits, "planType"),
+            CodexAccountInfo.Unknown(GetString(rateLimits, "planType")),
             fiveHour,
             weekly,
             observedAt ?? DateTimeOffset.Now);

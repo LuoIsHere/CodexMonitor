@@ -43,16 +43,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     public AsyncCommand RefreshCommand { get; }
 
-    public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot?.FiveHour);
+    public string AccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account);
+
+    public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.FiveHour);
 
     public string FiveHourCountdown => QuotaDisplayFormatter.FormatCountdown(
+        Snapshot,
         Snapshot?.FiveHour,
         DateTimeOffset.Now,
         includeSeconds: true);
 
-    public string WeeklyPercent => QuotaDisplayFormatter.FormatPercent(Snapshot?.Weekly);
+    public string WeeklyPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.Weekly);
 
     public string WeeklyCountdown => QuotaDisplayFormatter.FormatCountdown(
+        Snapshot,
         Snapshot?.Weekly,
         DateTimeOffset.Now,
         includeSeconds: false);
@@ -150,6 +154,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     private void RaiseDisplayProperties()
     {
+        OnPropertyChanged(nameof(AccountText));
         OnPropertyChanged(nameof(FiveHourPercent));
         OnPropertyChanged(nameof(FiveHourCountdown));
         OnPropertyChanged(nameof(WeeklyPercent));

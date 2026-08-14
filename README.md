@@ -2,13 +2,15 @@
 
 CodexMonitor is a small personal Windows utility that displays the current Codex usage limits in a regular WPF window. It shows the short-period quota, weekly quota, reset countdowns, last refresh time, and current read status.
 
-Current version: `0.2.0`
+Current version: `0.2.1`
 
 ## Features
 
 - Shows the remaining percentage and reset countdown for the approximately five-hour quota window (`5H`).
 - Shows the remaining percentage and reset countdown for the weekly quota window (`WK`).
 - Shows the latest successful refresh time (`REF`) and read status.
+- Shows the active ChatGPT subscription plan or token/API-key login type.
+- Displays `None` for quota values, reset countdowns, and refresh time when Codex uses token/API-key authentication.
 - Reads data once at startup, then refreshes every three minutes by default.
 - Uses a one-second UI timer only to update local countdowns; it does not query Codex every second.
 - Supports an immediate manual refresh.
@@ -17,7 +19,7 @@ Current version: `0.2.0`
 - Restores the main window with a left click on the notification-area icon.
 - Provides notification-area commands to open the window, refresh immediately, or exit the application.
 
-Version 0.2.0 does not include taskbar docking, a settings UI, an installer, automatic startup, or automatic updates.
+Version 0.2.1 does not include taskbar docking, a settings UI, an installer, automatic startup, or automatic updates.
 
 ## System requirements
 
@@ -28,7 +30,7 @@ Version 0.2.0 does not include taskbar docking, a settings UI, an installer, aut
 
 ## Tested Codex version
 
-CodexMonitor 0.2.0 has been verified with:
+CodexMonitor 0.2.1 has been verified with:
 
 - Codex for Windows: `codex-cli 0.147.0-alpha.6.6`
 
@@ -51,7 +53,7 @@ The first run creates:
 %LOCALAPPDATA%\CodexMonitor\settings.json
 ```
 
-Version 0.2.0 has no settings UI. Exit the application and edit the file manually:
+Version 0.2.1 has no settings UI. Exit the application and edit the file manually:
 
 ```json
 {
@@ -80,7 +82,7 @@ Quota reads start the local process:
 codex.exe app-server --listen stdio://
 ```
 
-The application then initializes the line-delimited JSON protocol over standard input/output, sends the `initialized` notification, and calls `account/rateLimits/read`. It identifies the approximately 300-minute and 10,080-minute windows by `windowDurationMins` instead of relying on a fixed `primary`/`secondary` order.
+The application then initializes the line-delimited JSON protocol over standard input/output and sends the `initialized` notification. It calls `account/read` with token refresh disabled to obtain non-secret account type and plan metadata. ChatGPT logins continue with `account/rateLimits/read`; token, API-key, signed-out, and other non-ChatGPT account types do not request ChatGPT quota data. Quota parsing identifies the approximately 300-minute and 10,080-minute windows by `windowDurationMins` instead of relying on a fixed `primary`/`secondary` order.
 
 This app-server interface has no stability guarantee for this project. A future Codex release may change method names or response fields. The integration is isolated in `CodexAppServerQuotaProvider` and `RateLimitResponseParser` so it can be maintained independently from the UI and application state.
 
@@ -89,7 +91,11 @@ This app-server interface has no stability guarantee for this project. A future 
 The application:
 
 - Runs with the current standard user's permissions and does not request administrator access.
-- Does not read the Codex `auth.json` file or login tokens.
+- Does not directly open, read, or parse the Codex `auth.json` file, API-key files, token files, or the operating system credential store.
+- Does not receive, save, display, or log API keys, access tokens, refresh tokens, or other authentication secrets.
+- Delegates authentication entirely to the local Codex app-server and reads only the non-secret account type and subscription plan fields needed for display.
+- The Codex app-server may access credentials it manages as part of normal Codex operation; CodexMonitor neither requests nor receives those credential values.
+- Ignores account email addresses returned by the app-server and does not display, save, or log them.
 - Does not send quota, account, or device data to third parties.
 - Starts a local Codex app-server child process and closes it after the read completes.
 - Keeps its own user-level process running while the main window is hidden in the notification area.

@@ -3,8 +3,10 @@ namespace LuoIsHere.CodexMonitor.Core.Models;
 public sealed record QuotaSnapshot(
     string? LimitId,
     string? LimitName,
-    string? PlanType,
+    CodexAccountInfo Account,
     QuotaWindow? FiveHour,
     QuotaWindow? Weekly,
-    DateTimeOffset ObservedAt);
-
+    DateTimeOffset ObservedAt)
+{
+    public string? PlanType => Account.PlanType;
+}
