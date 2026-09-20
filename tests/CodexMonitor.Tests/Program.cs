@@ -30,7 +30,7 @@ if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
     return await RunLiveProbeAsync();
 }
 
-tests = [.. tests, .. StartupTests.Cases];
+tests = [.. tests, .. LocalizationTests.Cases, .. StartupTests.Cases];
 var failed = 0;
 foreach (var test in tests)
 {
@@ -165,7 +165,7 @@ static void TestDisplayFormatting()
         """);
 
     Equal("72%", QuotaDisplayFormatter.FormatPercent(snapshot.FiveHour), "rounded percent");
-    Equal("unavailable", QuotaDisplayFormatter.FormatCountdown(null, DateTimeOffset.Now, true), "unavailable window");
+    Equal("不可用", QuotaDisplayFormatter.FormatCountdown(null, DateTimeOffset.Now, true), "unavailable window");
     Equal("-", QuotaDisplayFormatter.FormatResetTime(snapshot, null), "missing reset time");
     Equal(
         snapshot.FiveHour!.ResetsAt!.Value.ToLocalTime().ToString("MM-dd HH:mm"),
@@ -216,7 +216,7 @@ static void TestSignedOutAccountResponse()
         """);
 
     Equal(CodexAuthenticationType.SignedOut, account.AuthenticationType, "signed-out authentication type");
-    Equal("Not signed in", QuotaDisplayFormatter.FormatAccount(account), "signed-out account display");
+    Equal("未登录", QuotaDisplayFormatter.FormatAccount(account), "signed-out account display");
 }
 
 static void TestTokenDisplaySuppression()

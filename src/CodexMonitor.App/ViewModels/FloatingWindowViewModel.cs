@@ -30,7 +30,7 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
 
     public string WeeklyResetTime => _source.WeeklyResetTime;
 
-    public string AccountText => _source.AccountText;
+    public string AccountText => _source.EnglishAccountText;
 
     public string LastRefreshText => _source.LastRefreshText;
 

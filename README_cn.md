@@ -1,9 +1,9 @@
-> [!Attention]
+> **Attention**
 > CodexMonitor 是个人项目，与 OpenAI 没有任何隶属关系，也没有 OpenAI 官方人员参与。
 
 # CodexMonitor
 
-[English](README.md)
+[English](README.md) · [繁體中文（香港）](README_hk.md)
 
 一个轻量 Windows 工具，通过主窗口、托盘和悬浮窗显示 Codex 额度、重置时间、订阅类型与刷新状态。
 
@@ -20,6 +20,7 @@
 - 悬浮窗可独立选择显示字段、拖动并保存位置；锁定后置顶并支持鼠标穿透，与主窗口共享刷新任务。
 - 可选择当前用户登录 Windows 后自启，并选择自动启动时最小化到托盘。
 - 单实例运行：手动重复启动恢复已有窗口，自动重复启动静默退出。
+- 主窗口、设置和托盘支持简体中文、英语及繁体中文（香港），悬浮窗保留英语显示。
 
 Token/API Key 账号的额度与刷新时间显示为 `None`，重置时间显示为 `-`。
 
@@ -53,6 +54,8 @@ Codex 升级可能改变本地 app-server 协议。
 ## 使用
 
 运行程序后显示主窗口，可手动刷新额度。关闭主窗口后仍在托盘后台运行；左键点击托盘图标恢复窗口，右键打开设置或选择“退出程序”。
+
+在“设置 → 常规 → 界面语言”中选择语言并保存，即时生效；默认使用简体中文。
 
 ![CodexMonitor 悬浮窗](assets/screenshots/codex-monitor-floating-window.png)
 
@@ -121,7 +124,7 @@ dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Rel
 powershell.exe -NoProfile -File .\build\Publish.ps1
 ```
 
-自包含发布可能从 NuGet.org 下载 Microsoft 运行时包。ZIP 包包含中英文 README、当前更新记录和许可证。
+自包含发布可能从 NuGet.org 下载 Microsoft 运行时包。ZIP 包包含三种语言的 README、当前更新记录和许可证。
 
 ## 项目信息
 

@@ -1,0 +1,294 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data xml:space="preserve" name="SettingsTitle">
+    <value>CodexMonitor 設定</value>
+  </data>
+  <data xml:space="preserve" name="Settings">
+    <value>設定</value>
+  </data>
+  <data xml:space="preserve" name="Close">
+    <value>關閉</value>
+  </data>
+  <data xml:space="preserve" name="General">
+    <value>一般</value>
+  </data>
+  <data xml:space="preserve" name="Language">
+    <value>介面語言</value>
+  </data>
+  <data xml:space="preserve" name="LanguageHint">
+    <value>儲存後生效。</value>
+  </data>
+  <data xml:space="preserve" name="Startup">
+    <value>啟動</value>
+  </data>
+  <data xml:space="preserve" name="StartupEnabled">
+    <value>登入 Windows 後自動啟動</value>
+  </data>
+  <data xml:space="preserve" name="MinimizeToTray">
+    <value>啟動後最小化至通知區域</value>
+  </data>
+  <data xml:space="preserve" name="StartupHint">
+    <value>自動啟動時只顯示通知區域圖示；已啟用的浮動視窗仍會顯示。</value>
+  </data>
+  <data xml:space="preserve" name="StartupWindowHint">
+    <value>取消此選項後，自動啟動會顯示主視窗。手動啟動一律顯示主視窗。</value>
+  </data>
+  <data xml:space="preserve" name="WindowsControlNotice">
+    <value>是否啟動仍由 Windows 啟動應用程式設定控制；如已被系統停用，請自行在 Windows 設定中確認。</value>
+  </data>
+  <data xml:space="preserve" name="RegisterCurrentPath">
+    <value>重新登記目前路徑（儲存後執行）</value>
+  </data>
+  <data xml:space="preserve" name="Notifications">
+    <value>通知</value>
+  </data>
+  <data xml:space="preserve" name="NotificationsEnabled">
+    <value>啟用系統通知</value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNoticeLabel">
+    <value>關閉主視窗轉入背景時：</value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNoticeHint">
+    <value>提示「程式仍在通知區域執行」，每次執行期間最多提示一次。</value>
+  </data>
+  <data xml:space="preserve" name="FailureNoticeLabel">
+    <value>額度更新失敗時：</value>
+  </data>
+  <data xml:space="preserve" name="FailureNoticeHint">
+    <value>提示讀取失敗及簡短原因，詳細資料記錄於日誌。</value>
+  </data>
+  <data xml:space="preserve" name="RefreshInterval">
+    <value>自動更新間隔</value>
+  </data>
+  <data xml:space="preserve" name="Minutes">
+    <value>{0} 分鐘</value>
+  </data>
+  <data xml:space="preserve" name="RefreshIntervalHint">
+    <value>儲存後會重新計算下次自動更新的時間。</value>
+  </data>
+  <data xml:space="preserve" name="MainDisplay">
+    <value>主視窗顯示內容</value>
+  </data>
+  <data xml:space="preserve" name="ShowFiveHour">
+    <value>顯示 5H 剩餘額度</value>
+  </data>
+  <data xml:space="preserve" name="ShowWeekly">
+    <value>顯示 7D 剩餘額度</value>
+  </data>
+  <data xml:space="preserve" name="ShowReset">
+    <value>顯示額度重設時間</value>
+  </data>
+  <data xml:space="preserve" name="ShowSubscription">
+    <value>顯示訂閱類型</value>
+  </data>
+  <data xml:space="preserve" name="FloatingWindow">
+    <value>浮動視窗</value>
+  </data>
+  <data xml:space="preserve" name="FloatingTitle">
+    <value>CodexMonitor 浮動視窗</value>
+  </data>
+  <data xml:space="preserve" name="State">
+    <value>狀態</value>
+  </data>
+  <data xml:space="preserve" name="EnableFloating">
+    <value>啟用浮動視窗</value>
+  </data>
+  <data xml:space="preserve" name="LockFloating">
+    <value>鎖定浮動視窗</value>
+  </data>
+  <data xml:space="preserve" name="LockFloatingHint">
+    <value>鎖定浮動視窗（滑鼠點擊穿透並置頂）</value>
+  </data>
+  <data xml:space="preserve" name="DragHint">
+    <value>解鎖後，按住浮動視窗的空白位置即可拖動。鎖定後可從通知區域選單解鎖。</value>
+  </data>
+  <data xml:space="preserve" name="FloatingDisplay">
+    <value>浮動視窗顯示內容</value>
+  </data>
+  <data xml:space="preserve" name="ShowUpdated">
+    <value>顯示最近成功更新時間</value>
+  </data>
+  <data xml:space="preserve" name="Cancel">
+    <value>取消</value>
+  </data>
+  <data xml:space="preserve" name="Save">
+    <value>儲存</value>
+  </data>
+  <data xml:space="preserve" name="RefreshNow">
+    <value>立即更新</value>
+  </data>
+  <data xml:space="preserve" name="Minimize">
+    <value>最小化</value>
+  </data>
+  <data xml:space="preserve" name="HideToTray">
+    <value>關閉並隱藏至通知區域</value>
+  </data>
+  <data xml:space="preserve" name="Reset">
+    <value>重設</value>
+  </data>
+  <data xml:space="preserve" name="Subscription">
+    <value>訂閱</value>
+  </data>
+  <data xml:space="preserve" name="Updated">
+    <value>更新</value>
+  </data>
+  <data xml:space="preserve" name="Exit">
+    <value>結束程式</value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNotification">
+    <value>程式仍在通知區域執行。</value>
+  </data>
+  <data xml:space="preserve" name="UnknownError">
+    <value>不明錯誤</value>
+  </data>
+  <data xml:space="preserve" name="RefreshFailureTitle">
+    <value>CodexMonitor 更新失敗</value>
+  </data>
+  <data xml:space="preserve" name="RefreshFailureBody">
+    <value>{0}
+詳細資料已記錄於日誌。</value>
+  </data>
+  <data xml:space="preserve" name="Refreshing">
+    <value>正在更新</value>
+  </data>
+  <data xml:space="preserve" name="ReadFailed">
+    <value>讀取失敗</value>
+  </data>
+  <data xml:space="preserve" name="Stale">
+    <value>資料可能已過時</value>
+  </data>
+  <data xml:space="preserve" name="Waiting">
+    <value>等候首次讀取</value>
+  </data>
+  <data xml:space="preserve" name="Healthy">
+    <value>正常</value>
+  </data>
+  <data xml:space="preserve" name="Unknown">
+    <value>不明</value>
+  </data>
+  <data xml:space="preserve" name="SignedOut">
+    <value>未登入</value>
+  </data>
+  <data xml:space="preserve" name="Other">
+    <value>其他</value>
+  </data>
+  <data xml:space="preserve" name="Unavailable">
+    <value>無法使用</value>
+  </data>
+  <data xml:space="preserve" name="UnknownReadError">
+    <value>不明讀取錯誤</value>
+  </data>
+  <data xml:space="preserve" name="UnhandledRefreshError">
+    <value>更新時發生未處理的錯誤</value>
+  </data>
+  <data xml:space="preserve" name="StartupFailed">
+    <value>CodexMonitor 啟動失敗。
+
+{0}</value>
+  </data>
+  <data xml:space="preserve" name="SettingsNotReady">
+    <value>設定儲存空間尚未就緒。</value>
+  </data>
+  <data xml:space="preserve" name="RunValueInvalid">
+    <value>CodexMonitor 啟動項目不是字串，請在 Windows 中檢查。</value>
+  </data>
+  <data xml:space="preserve" name="RunKeyUnavailable">
+    <value>無法開啟目前使用者的啟動項目。</value>
+  </data>
+  <data xml:space="preserve" name="StartupMissing">
+    <value>尚未登記啟動項目。</value>
+  </data>
+  <data xml:space="preserve" name="StartupRegistered">
+    <value>已登記目前的應用程式路徑。</value>
+  </data>
+  <data xml:space="preserve" name="StartupMismatch">
+    <value>已登記的路徑或參數與目前的應用程式不符；可手動重新登記目前路徑。</value>
+  </data>
+  <data xml:space="preserve" name="StartupStatusFailed">
+    <value>無法確認啟動項目狀態：{0}</value>
+  </data>
+  <data xml:space="preserve" name="StartupCommandTooLong">
+    <value>啟動指令超過 Windows Run 的 260 字元限制，請將應用程式移至較短的路徑。</value>
+  </data>
+  <data xml:space="preserve" name="StartupTargetUnknown">
+    <value>無法確定應用程式的實際 EXE。請直接執行發佈的 CodexMonitor EXE，再設定自動啟動。</value>
+  </data>
+  <data xml:space="preserve" name="StartupTargetMissing">
+    <value>應用程式 EXE 已不存在，請從有效位置執行後重新登記。</value>
+  </data>
+  <data xml:space="preserve" name="StartupSaveFailed">
+    <value>自動啟動設定失敗，本次設定未儲存：{0}</value>
+  </data>
+  <data xml:space="preserve" name="StartupPartialFailure">
+    <value>啟動項目操作已完成，但設定儲存失敗。</value>
+  </data>
+  <data xml:space="preserve" name="SettingsSaveFailed">
+    <value>設定儲存失敗。</value>
+  </data>
+  <data xml:space="preserve" name="SettingsRetryHint">
+    <value>{0}{1} 可重試儲存；取消不會復原已完成的啟動項目操作。</value>
+  </data>
+  <data xml:space="preserve" name="StageStart">
+    <value>啟動 Codex app-server</value>
+  </data>
+  <data xml:space="preserve" name="CodexNotFound">
+    <value>找不到 codex.exe；請確認已安裝 Codex 桌面版</value>
+  </data>
+  <data xml:space="preserve" name="ReadTimeout">
+    <value>讀取 Codex 用量逾時（{0}）</value>
+  </data>
+  <data xml:space="preserve" name="ReadCancelled">
+    <value>已取消讀取</value>
+  </data>
+  <data xml:space="preserve" name="CodexStartFailed">
+    <value>無法啟動 codex.exe app-server</value>
+  </data>
+  <data xml:space="preserve" name="StageInitialize">
+    <value>初始化</value>
+  </data>
+  <data xml:space="preserve" name="StageAccount">
+    <value>讀取帳戶</value>
+  </data>
+  <data xml:space="preserve" name="StageParse">
+    <value>解析回應</value>
+  </data>
+  <data xml:space="preserve" name="StageQuota">
+    <value>讀取額度</value>
+  </data>
+  <data xml:space="preserve" name="AccountResultMissing">
+    <value>Codex 帳戶回應缺少 result</value>
+  </data>
+  <data xml:space="preserve" name="RpcResultMissing">
+    <value>Codex JSON-RPC 回應缺少 result</value>
+  </data>
+  <data xml:space="preserve" name="CodexExited">
+    <value>codex.exe app-server 已結束，代碼 {0}</value>
+  </data>
+  <data xml:space="preserve" name="RpcError">
+    <value>Codex JSON-RPC 錯誤：{0}</value>
+  </data>
+  <data xml:space="preserve" name="CodexUnauthorized">
+    <value>沒有權限啟動 Codex app-server</value>
+  </data>
+  <data xml:space="preserve" name="CodexMissing">
+    <value>codex.exe 已不存在</value>
+  </data>
+  <data xml:space="preserve" name="CodexReadFailed">
+    <value>讀取 Codex 用量失敗</value>
+  </data>
+  <data xml:space="preserve" name="RateLimitsMissing">
+    <value>Codex 回應缺少 rateLimits 物件</value>
+  </data>
+  <data xml:space="preserve" name="AccountResponseInvalid">
+    <value>Codex 帳戶回應不是物件</value>
+  </data>
+  <data xml:space="preserve" name="AccountInvalid">
+    <value>Codex 帳戶回應中的 account 不是物件</value>
+  </data>
+</root>

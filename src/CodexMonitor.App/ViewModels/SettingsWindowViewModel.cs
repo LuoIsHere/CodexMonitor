@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 using LuoIsHere.CodexMonitor.Infrastructure.Startup;
 
@@ -8,6 +9,7 @@ namespace LuoIsHere.CodexMonitor.App.ViewModels;
 public sealed class SettingsWindowViewModel : INotifyPropertyChanged
 {
     private readonly AppSettings _sourceSettings;
+    private string _language;
     private int _refreshIntervalMinutes;
     private bool _notificationsEnabled;
     private bool _showFiveHourQuota;
@@ -30,6 +32,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     public SettingsWindowViewModel(AppSettings settings)
     {
         _sourceSettings = settings;
+        _language = settings.Language;
         _startupEnabled = settings.Startup.Enabled;
         _minimizeToTray = settings.Startup.MinimizeToTray;
         _refreshIntervalMinutes = settings.RefreshIntervalMinutes;
@@ -48,6 +51,21 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public IReadOnlyList<LanguageOption> Languages { get; } =
+    [
+        new("zh-CN", "简体中文"),
+        new("en", "English"),
+        new("zh-HK", "繁體中文（香港）"),
+    ];
+
+    public string Language
+    {
+        get => _language;
+        set => SetField(ref _language, AppText.NormalizeLanguage(value));
+    }
+
+    public string RefreshIntervalText => AppText.Get("Minutes", RefreshIntervalMinutes);
 
     public bool StartupEnabled
     {
@@ -91,7 +109,11 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     public int RefreshIntervalMinutes
     {
         get => _refreshIntervalMinutes;
-        set => SetField(ref _refreshIntervalMinutes, Math.Clamp(value, 1, 60));
+        set
+        {
+            SetField(ref _refreshIntervalMinutes, Math.Clamp(value, 1, 60));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RefreshIntervalText)));
+        }
     }
 
     public bool NotificationsEnabled
@@ -170,6 +192,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         => _sourceSettings with
         {
             SchemaVersion = 4,
+            Language = Language,
             Startup = new StartupSettings
             {
                 Enabled = StartupEnabled,
@@ -213,3 +236,5 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
+
+public sealed record LanguageOption(string Code, string Name);

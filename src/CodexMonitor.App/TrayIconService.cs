@@ -1,4 +1,5 @@
 using System.Drawing;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using Forms = System.Windows.Forms;
 
 namespace LuoIsHere.CodexMonitor.App;
@@ -12,6 +13,8 @@ public sealed class TrayIconService : IDisposable
     private readonly Forms.ToolStripMenuItem _floatingWindowItem;
     private readonly Forms.ToolStripMenuItem _floatingWindowLockItem;
     private readonly IFloatingWindowService _floatingWindowService;
+    private readonly Forms.ToolStripMenuItem _settingsItem;
+    private readonly Forms.ToolStripMenuItem _exitItem;
     private bool _backgroundNotificationShown;
     private bool _disposed;
 
@@ -20,17 +23,17 @@ public sealed class TrayIconService : IDisposable
         _floatingWindowService = floatingWindowService;
         _applicationIcon = LoadApplicationIcon();
 
-        _minimizeItem = new Forms.ToolStripMenuItem("最小化");
+        _minimizeItem = new Forms.ToolStripMenuItem(AppText.Get("Minimize"));
         _minimizeItem.Click += OnMinimizeClick;
 
-        _floatingWindowItem = new Forms.ToolStripMenuItem("启用悬浮窗")
+        _floatingWindowItem = new Forms.ToolStripMenuItem(AppText.Get("EnableFloating"))
         {
             Checked = floatingWindowService.IsEnabled,
             Enabled = floatingWindowService.IsAvailable,
         };
         _floatingWindowItem.Click += OnFloatingWindowClick;
 
-        _floatingWindowLockItem = new Forms.ToolStripMenuItem("锁定悬浮窗")
+        _floatingWindowLockItem = new Forms.ToolStripMenuItem(AppText.Get("LockFloating"))
         {
             Checked = floatingWindowService.IsLocked,
             Enabled = floatingWindowService.IsAvailable && floatingWindowService.IsEnabled,
@@ -38,19 +41,19 @@ public sealed class TrayIconService : IDisposable
         _floatingWindowLockItem.Click += OnFloatingWindowLockClick;
         _floatingWindowService.StateChanged += OnFloatingWindowStateChanged;
 
-        var settingsItem = new Forms.ToolStripMenuItem("设置");
-        settingsItem.Click += OnSettingsClick;
+        _settingsItem = new Forms.ToolStripMenuItem(AppText.Get("Settings"));
+        _settingsItem.Click += OnSettingsClick;
 
-        var exitItem = new Forms.ToolStripMenuItem("退出程序");
-        exitItem.Click += OnExitClick;
+        _exitItem = new Forms.ToolStripMenuItem(AppText.Get("Exit"));
+        _exitItem.Click += OnExitClick;
 
         _contextMenu = CreateContextMenu();
         _contextMenu.Items.Add(_minimizeItem);
         _contextMenu.Items.Add(_floatingWindowItem);
         _contextMenu.Items.Add(_floatingWindowLockItem);
-        _contextMenu.Items.Add(settingsItem);
+        _contextMenu.Items.Add(_settingsItem);
         _contextMenu.Items.Add(new Forms.ToolStripSeparator());
-        _contextMenu.Items.Add(exitItem);
+        _contextMenu.Items.Add(_exitItem);
 
         _notifyIcon = new Forms.NotifyIcon
         {
@@ -60,6 +63,7 @@ public sealed class TrayIconService : IDisposable
             Visible = true,
         };
         _notifyIcon.MouseClick += OnMouseClick;
+        AppText.LanguageChanged += OnLanguageChanged;
     }
 
     public event EventHandler? OpenRequested;
@@ -87,7 +91,7 @@ public sealed class TrayIconService : IDisposable
 
         _backgroundNotificationShown = true;
         _notifyIcon.BalloonTipTitle = "CodexMonitor";
-        _notifyIcon.BalloonTipText = "程序仍在通知区域运行。";
+        _notifyIcon.BalloonTipText = AppText.Get("BackgroundNotification");
         // Do not replace the application icon with Windows' built-in information glyph.
         _notifyIcon.BalloonTipIcon = Forms.ToolTipIcon.None;
         _notifyIcon.ShowBalloonTip(3_000);
@@ -102,17 +106,26 @@ public sealed class TrayIconService : IDisposable
 
         const int maximumErrorLength = 160;
         var compactError = string.IsNullOrWhiteSpace(error)
-            ? "未知错误"
+            ? AppText.Get("UnknownError")
             : error.Trim();
         if (compactError.Length > maximumErrorLength)
         {
             compactError = compactError[..maximumErrorLength] + "…";
         }
 
-        _notifyIcon.BalloonTipTitle = "CodexMonitor 刷新失败";
-        _notifyIcon.BalloonTipText = $"{compactError}\n详细信息已写入日志。";
+        _notifyIcon.BalloonTipTitle = AppText.Get("RefreshFailureTitle");
+        _notifyIcon.BalloonTipText = AppText.Get("RefreshFailureBody", compactError);
         _notifyIcon.BalloonTipIcon = Forms.ToolTipIcon.Warning;
         _notifyIcon.ShowBalloonTip(5_000);
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        _minimizeItem.Text = AppText.Get("Minimize");
+        _floatingWindowItem.Text = AppText.Get("EnableFloating");
+        _floatingWindowLockItem.Text = AppText.Get("LockFloating");
+        _settingsItem.Text = AppText.Get("Settings");
+        _exitItem.Text = AppText.Get("Exit");
     }
 
     private void OnMouseClick(object? sender, Forms.MouseEventArgs e)
@@ -208,6 +221,7 @@ public sealed class TrayIconService : IDisposable
         }
 
         _disposed = true;
+        AppText.LanguageChanged -= OnLanguageChanged;
         _floatingWindowService.StateChanged -= OnFloatingWindowStateChanged;
         _notifyIcon.MouseClick -= OnMouseClick;
         _notifyIcon.Visible = false;

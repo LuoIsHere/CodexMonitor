@@ -81,6 +81,7 @@ if ($LASTEXITCODE -ne 0) { throw "Framework-dependent single-file publish failed
 $publicFiles = @(
     (Join-Path $repositoryRoot "README.md"),
     (Join-Path $repositoryRoot "README_cn.md"),
+    (Join-Path $repositoryRoot "README_hk.md"),
     (Join-Path $repositoryRoot "CHANGELOG.md"),
     (Join-Path $repositoryRoot "LICENSE")
 )

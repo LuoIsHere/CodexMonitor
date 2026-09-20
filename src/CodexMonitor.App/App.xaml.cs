@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.App.ViewModels;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Refresh;
@@ -51,6 +52,7 @@ public partial class App : System.Windows.Application
             _logger = new FileAppLogger();
             _settingsStore = new JsonSettingsStore(_logger);
             _settings = await _settingsStore.LoadAsync();
+            ApplicationLocalizer.Apply(_settings.Language);
             _startupService = new UserStartupService(new WindowsRunRegistrationStore(), new StartupExecutableResolver());
             var provider = new CodexAppServerQuotaProvider(
                 new CodexExecutableLocator(),
@@ -99,7 +101,7 @@ public partial class App : System.Windows.Application
             if (!_startupOptions.IsAutomatic)
             {
                 System.Windows.MessageBox.Show(
-                    $"CodexMonitor 启动失败。\n\n{exception.Message}",
+                    AppText.Get("StartupFailed", exception.Message),
                     "CodexMonitor",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -219,7 +221,7 @@ public partial class App : System.Windows.Application
     {
         if (_settingsStore is null)
         {
-            throw new InvalidOperationException("设置存储尚未就绪。");
+            throw new InvalidOperationException(AppText.Get("SettingsNotReady"));
         }
 
         await _settingsSaveLock.WaitAsync();
@@ -236,6 +238,7 @@ public partial class App : System.Windows.Application
             };
             await _settingsStore.SaveAsync(saved);
             _settings = saved;
+            ApplicationLocalizer.Apply(saved.Language);
             _viewModel?.ApplyPreferences(
                 TimeSpan.FromMinutes(saved.RefreshIntervalMinutes),
                 CreateDisplayPreferences(saved.Display));

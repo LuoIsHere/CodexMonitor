@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Formatting;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Core.Refresh;
@@ -40,6 +41,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
             RefreshAsync,
             () => !_state.IsRefreshing);
         _refreshService.StateChanged += OnStateChanged;
+        AppText.LanguageChanged += OnLanguageChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -49,6 +51,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
     public AsyncCommand RefreshCommand { get; }
 
     public string AccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account);
+
+    public string EnglishAccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account, "en");
 
     public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.FiveHour);
 
@@ -61,10 +65,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
     public string LastRefreshText => QuotaDisplayFormatter.FormatRefreshTime(Snapshot);
 
     public string StatusText => _state.IsRefreshing
-        ? "正在刷新"
+        ? AppText.Get("Refreshing")
         : _state.Error is not null
-            ? Snapshot is null ? "读取失败" : "数据可能已过期"
-            : Snapshot is null ? "等待首次读取" : "正常";
+            ? Snapshot is null ? AppText.Get("ReadFailed") : AppText.Get("Stale")
+            : Snapshot is null ? AppText.Get("Waiting") : AppText.Get("Healthy");
 
     public MediaBrush StatusBrush => _state.IsRefreshing
         ? MediaBrushes.DodgerBlue
@@ -199,6 +203,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         OnPropertyChanged(nameof(StatusBrush));
     }
 
+    private void OnLanguageChanged(object? sender, EventArgs e) => RaiseDisplayProperties();
+
     private void RaiseDisplaySettingsProperties()
     {
         OnPropertyChanged(nameof(FiveHourVisibility));
@@ -258,6 +264,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         }
 
         _refreshService.StateChanged -= OnStateChanged;
+        AppText.LanguageChanged -= OnLanguageChanged;
         _refreshTimer.Stop();
         _refreshTimer.Tick -= OnRefreshTimerTick;
         await _lifetime.CancelAsync();

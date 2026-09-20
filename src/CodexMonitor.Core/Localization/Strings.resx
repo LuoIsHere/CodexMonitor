@@ -1,0 +1,294 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data xml:space="preserve" name="SettingsTitle">
+    <value>CodexMonitor Settings</value>
+  </data>
+  <data xml:space="preserve" name="Settings">
+    <value>Settings</value>
+  </data>
+  <data xml:space="preserve" name="Close">
+    <value>Close</value>
+  </data>
+  <data xml:space="preserve" name="General">
+    <value>General</value>
+  </data>
+  <data xml:space="preserve" name="Language">
+    <value>Language</value>
+  </data>
+  <data xml:space="preserve" name="LanguageHint">
+    <value>Applied when saved.</value>
+  </data>
+  <data xml:space="preserve" name="Startup">
+    <value>Startup</value>
+  </data>
+  <data xml:space="preserve" name="StartupEnabled">
+    <value>Start when I sign in to Windows</value>
+  </data>
+  <data xml:space="preserve" name="MinimizeToTray">
+    <value>Start in the system tray</value>
+  </data>
+  <data xml:space="preserve" name="StartupHint">
+    <value>On automatic startup, only the tray icon appears. The floating window is shown if enabled.</value>
+  </data>
+  <data xml:space="preserve" name="StartupWindowHint">
+    <value>Turn this off to show the main window on automatic startup. Manual launches always show the main window.</value>
+  </data>
+  <data xml:space="preserve" name="WindowsControlNotice">
+    <value>Windows startup app settings still apply. If Windows has disabled startup, check your Windows settings.</value>
+  </data>
+  <data xml:space="preserve" name="RegisterCurrentPath">
+    <value>Register the current path again when saved</value>
+  </data>
+  <data xml:space="preserve" name="Notifications">
+    <value>Notifications</value>
+  </data>
+  <data xml:space="preserve" name="NotificationsEnabled">
+    <value>Enable system notifications</value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNoticeLabel">
+    <value>When the main window is closed: </value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNoticeHint">
+    <value>Shows “CodexMonitor is still running in the system tray” at most once per session.</value>
+  </data>
+  <data xml:space="preserve" name="FailureNoticeLabel">
+    <value>When a quota refresh fails: </value>
+  </data>
+  <data xml:space="preserve" name="FailureNoticeHint">
+    <value>Shows a brief reason for the failure. Details are recorded in the log.</value>
+  </data>
+  <data xml:space="preserve" name="RefreshInterval">
+    <value>Refresh interval</value>
+  </data>
+  <data xml:space="preserve" name="Minutes">
+    <value>{0} min</value>
+  </data>
+  <data xml:space="preserve" name="RefreshIntervalHint">
+    <value>Saving restarts the automatic refresh interval.</value>
+  </data>
+  <data xml:space="preserve" name="MainDisplay">
+    <value>Main window content</value>
+  </data>
+  <data xml:space="preserve" name="ShowFiveHour">
+    <value>Show 5H remaining quota</value>
+  </data>
+  <data xml:space="preserve" name="ShowWeekly">
+    <value>Show 7D remaining quota</value>
+  </data>
+  <data xml:space="preserve" name="ShowReset">
+    <value>Show quota reset times</value>
+  </data>
+  <data xml:space="preserve" name="ShowSubscription">
+    <value>Show subscription type</value>
+  </data>
+  <data xml:space="preserve" name="FloatingWindow">
+    <value>Floating window</value>
+  </data>
+  <data xml:space="preserve" name="FloatingTitle">
+    <value>CodexMonitor Floating Window</value>
+  </data>
+  <data xml:space="preserve" name="State">
+    <value>State</value>
+  </data>
+  <data xml:space="preserve" name="EnableFloating">
+    <value>Enable floating window</value>
+  </data>
+  <data xml:space="preserve" name="LockFloating">
+    <value>Lock floating window</value>
+  </data>
+  <data xml:space="preserve" name="LockFloatingHint">
+    <value>Lock floating window (click-through, always on top)</value>
+  </data>
+  <data xml:space="preserve" name="DragHint">
+    <value>Drag an empty area to move the unlocked window. Use the tray menu to unlock it.</value>
+  </data>
+  <data xml:space="preserve" name="FloatingDisplay">
+    <value>Floating window content</value>
+  </data>
+  <data xml:space="preserve" name="ShowUpdated">
+    <value>Show last successful refresh time</value>
+  </data>
+  <data xml:space="preserve" name="Cancel">
+    <value>Cancel</value>
+  </data>
+  <data xml:space="preserve" name="Save">
+    <value>Save</value>
+  </data>
+  <data xml:space="preserve" name="RefreshNow">
+    <value>Refresh now</value>
+  </data>
+  <data xml:space="preserve" name="Minimize">
+    <value>Minimize</value>
+  </data>
+  <data xml:space="preserve" name="HideToTray">
+    <value>Close to the system tray</value>
+  </data>
+  <data xml:space="preserve" name="Reset">
+    <value>RESET</value>
+  </data>
+  <data xml:space="preserve" name="Subscription">
+    <value>SUBSCRIPTION</value>
+  </data>
+  <data xml:space="preserve" name="Updated">
+    <value>UPDATED</value>
+  </data>
+  <data xml:space="preserve" name="Exit">
+    <value>Exit</value>
+  </data>
+  <data xml:space="preserve" name="BackgroundNotification">
+    <value>CodexMonitor is still running in the system tray.</value>
+  </data>
+  <data xml:space="preserve" name="UnknownError">
+    <value>Unknown error</value>
+  </data>
+  <data xml:space="preserve" name="RefreshFailureTitle">
+    <value>CodexMonitor refresh failed</value>
+  </data>
+  <data xml:space="preserve" name="RefreshFailureBody">
+    <value>{0}
+Details have been recorded in the log.</value>
+  </data>
+  <data xml:space="preserve" name="Refreshing">
+    <value>Refreshing</value>
+  </data>
+  <data xml:space="preserve" name="ReadFailed">
+    <value>Read failed</value>
+  </data>
+  <data xml:space="preserve" name="Stale">
+    <value>Data may be outdated</value>
+  </data>
+  <data xml:space="preserve" name="Waiting">
+    <value>Waiting for data</value>
+  </data>
+  <data xml:space="preserve" name="Healthy">
+    <value>Up to date</value>
+  </data>
+  <data xml:space="preserve" name="Unknown">
+    <value>Unknown</value>
+  </data>
+  <data xml:space="preserve" name="SignedOut">
+    <value>Not signed in</value>
+  </data>
+  <data xml:space="preserve" name="Other">
+    <value>Other</value>
+  </data>
+  <data xml:space="preserve" name="Unavailable">
+    <value>Unavailable</value>
+  </data>
+  <data xml:space="preserve" name="UnknownReadError">
+    <value>Unknown read error</value>
+  </data>
+  <data xml:space="preserve" name="UnhandledRefreshError">
+    <value>Unexpected error during refresh</value>
+  </data>
+  <data xml:space="preserve" name="StartupFailed">
+    <value>CodexMonitor could not start.
+
+{0}</value>
+  </data>
+  <data xml:space="preserve" name="SettingsNotReady">
+    <value>Settings storage is not ready.</value>
+  </data>
+  <data xml:space="preserve" name="RunValueInvalid">
+    <value>The CodexMonitor startup entry is not a string. Check it in Windows.</value>
+  </data>
+  <data xml:space="preserve" name="RunKeyUnavailable">
+    <value>Cannot open startup entries for the current user.</value>
+  </data>
+  <data xml:space="preserve" name="StartupMissing">
+    <value>No startup entry is registered.</value>
+  </data>
+  <data xml:space="preserve" name="StartupRegistered">
+    <value>The current application path is registered.</value>
+  </data>
+  <data xml:space="preserve" name="StartupMismatch">
+    <value>The registered path or arguments differ from this application. You can register the current path again.</value>
+  </data>
+  <data xml:space="preserve" name="StartupStatusFailed">
+    <value>Cannot check the startup entry: {0}</value>
+  </data>
+  <data xml:space="preserve" name="StartupCommandTooLong">
+    <value>The startup command exceeds the Windows Run limit of 260 characters. Move the application to a shorter path.</value>
+  </data>
+  <data xml:space="preserve" name="StartupTargetUnknown">
+    <value>Cannot identify the application EXE. Run the published CodexMonitor EXE directly before enabling startup.</value>
+  </data>
+  <data xml:space="preserve" name="StartupTargetMissing">
+    <value>The application EXE no longer exists. Run it from a valid location and register it again.</value>
+  </data>
+  <data xml:space="preserve" name="StartupSaveFailed">
+    <value>Could not update startup. These settings were not saved: {0}</value>
+  </data>
+  <data xml:space="preserve" name="StartupPartialFailure">
+    <value>The startup entry was updated, but settings could not be saved. </value>
+  </data>
+  <data xml:space="preserve" name="SettingsSaveFailed">
+    <value>Settings could not be saved. </value>
+  </data>
+  <data xml:space="preserve" name="SettingsRetryHint">
+    <value>{0}{1} You can retry saving. Cancel will not undo any completed changes to the startup entry.</value>
+  </data>
+  <data xml:space="preserve" name="StageStart">
+    <value>starting Codex app-server</value>
+  </data>
+  <data xml:space="preserve" name="CodexNotFound">
+    <value>codex.exe was not found. Make sure Codex for Windows is installed.</value>
+  </data>
+  <data xml:space="preserve" name="ReadTimeout">
+    <value>Timed out reading Codex usage ({0})</value>
+  </data>
+  <data xml:space="preserve" name="ReadCancelled">
+    <value>Read cancelled</value>
+  </data>
+  <data xml:space="preserve" name="CodexStartFailed">
+    <value>Cannot start codex.exe app-server</value>
+  </data>
+  <data xml:space="preserve" name="StageInitialize">
+    <value>initializing</value>
+  </data>
+  <data xml:space="preserve" name="StageAccount">
+    <value>reading account</value>
+  </data>
+  <data xml:space="preserve" name="StageParse">
+    <value>parsing response</value>
+  </data>
+  <data xml:space="preserve" name="StageQuota">
+    <value>reading quota</value>
+  </data>
+  <data xml:space="preserve" name="AccountResultMissing">
+    <value>Codex account response is missing result</value>
+  </data>
+  <data xml:space="preserve" name="RpcResultMissing">
+    <value>Codex JSON-RPC response is missing result</value>
+  </data>
+  <data xml:space="preserve" name="CodexExited">
+    <value>codex.exe app-server exited with code {0}</value>
+  </data>
+  <data xml:space="preserve" name="RpcError">
+    <value>Codex JSON-RPC error: {0}</value>
+  </data>
+  <data xml:space="preserve" name="CodexUnauthorized">
+    <value>Permission denied when starting Codex app-server</value>
+  </data>
+  <data xml:space="preserve" name="CodexMissing">
+    <value>codex.exe no longer exists</value>
+  </data>
+  <data xml:space="preserve" name="CodexReadFailed">
+    <value>Failed to read Codex usage</value>
+  </data>
+  <data xml:space="preserve" name="RateLimitsMissing">
+    <value>Codex response is missing the rateLimits object</value>
+  </data>
+  <data xml:space="preserve" name="AccountResponseInvalid">
+    <value>Codex account response is not an object</value>
+  </data>
+  <data xml:space="preserve" name="AccountInvalid">
+    <value>The account field in the Codex response is not an object</value>
+  </data>
+</root>

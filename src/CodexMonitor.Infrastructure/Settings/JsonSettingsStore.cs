@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Settings;
@@ -69,6 +70,7 @@ public sealed class JsonSettingsStore
         return settings with
         {
             SchemaVersion = 4,
+            Language = AppText.NormalizeLanguage(settings.Language),
             Startup = settings.SchemaVersion < 4 ? new StartupSettings() : settings.Startup ?? new StartupSettings(),
             RefreshIntervalMinutes = Math.Clamp(settings.RefreshIntervalMinutes, 1, 60),
             CodexExecutable = string.IsNullOrWhiteSpace(settings.CodexExecutable)

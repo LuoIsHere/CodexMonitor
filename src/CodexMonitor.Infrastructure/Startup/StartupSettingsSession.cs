@@ -1,3 +1,4 @@
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Startup;
@@ -36,7 +37,7 @@ public sealed class StartupSettingsSession
         }
         catch (Exception exception) when (UserStartupService.IsExpectedFailure(exception))
         {
-            return new(false, false, $"自启设置失败，未保存本次设置：{exception.Message}");
+            return new(false, false, AppText.Get("StartupSaveFailed", exception.Message));
         }
 
         try
@@ -47,8 +48,8 @@ public sealed class StartupSettingsSession
         }
         catch (Exception exception) when (UserStartupService.IsExpectedFailure(exception))
         {
-            var prefix = _hasUnpersistedStartupChange ? "启动项操作已完成，但配置保存失败。" : "配置保存失败。";
-            return new(false, applied, $"{prefix}{exception.Message} 可重试保存；取消不会撤销已完成的启动项操作。");
+            var prefix = _hasUnpersistedStartupChange ? AppText.Get("StartupPartialFailure") : AppText.Get("SettingsSaveFailed");
+            return new(false, applied, AppText.Get("SettingsRetryHint", prefix, exception.Message));
         }
     }
 }

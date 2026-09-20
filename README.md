@@ -1,9 +1,9 @@
-> [!Attention]
+> **Attention**
 > CodexMonitor is a personal project. It is not affiliated with OpenAI, and no OpenAI staff are involved in the project.
 
 # CodexMonitor
 
-[简体中文](README_cn.md)
+[简体中文](README_cn.md) · [繁體中文（香港）](README_hk.md)
 
 A small Windows utility for viewing Codex quota, reset times, subscription type and refresh status from the notification area or a compact floating window.
 
@@ -20,6 +20,7 @@ Version: `0.3.1`
 - A draggable floating window with independent display settings, remembered position, and locked click-through/topmost mode. Both windows share one refresh service.
 - Optional startup at Windows sign-in for the current user, with an option to start in the notification area.
 - Single-instance operation: manual launches restore the running application; automatic launches leave it undisturbed.
+- Simplified Chinese, English and Traditional Chinese (Hong Kong) for the main window, settings and tray. The floating window keeps its English labels.
 
 Token/API-key accounts display `None` for quota and refresh time, and `-` for reset times.
 
@@ -52,7 +53,9 @@ The local app-server protocol may change between Codex releases.
 
 ## Usage
 
-Run the application to open the dashboard. Use **Refresh now** for an immediate read. Closing the main window keeps monitoring active in the notification area; left-click its icon to restore the window. Right-click for settings and **Exit application**.
+Run the application to open the dashboard. Use **Refresh now** for an immediate read. Closing the main window keeps monitoring active in the notification area; left-click its icon to restore the window. Right-click for settings and **Exit**.
+
+Choose a language in **Settings → General → Language** and save. The change takes effect immediately; the default is Simplified Chinese.
 
 ![CodexMonitor floating window](assets/screenshots/codex-monitor-floating-window.png)
 
@@ -60,11 +63,11 @@ Enable the floating window from the notification-area menu or Settings. Drag it 
 
 ## Start at Windows sign-in
 
-In **Settings → General**, enable **登录 Windows 后自动启动** and save. This is off by default and requires no administrator privileges. Keep **启动后最小化到托盘** checked to show only the notification-area icon and any enabled floating window. Uncheck it to show the main window on automatic startup. Manual launches always open or restore the application window.
+In **Settings → General**, enable **Start when I sign in to Windows** and save. This is off by default and requires no administrator privileges. Keep **Start in the system tray** checked to show only the notification-area icon and any enabled floating window. Uncheck it to show the main window on automatic startup. Manual launches always open or restore the application window.
 
 The startup entry changes only when you explicitly save a startup change. **Windows Startup apps settings still control whether it runs**; CodexMonitor does not re-enable entries disabled in Windows Settings or Task Manager.
 
-After moving the application, run it from its new location, select **重新登记当前路径（保存后执行）** in Settings and save.
+After moving the application, run it from its new location, select **Register the current path again when saved** in Settings and save.
 
 ## Settings and logs
 
@@ -119,7 +122,7 @@ To create the four release packages in `artifacts/`:
 powershell.exe -NoProfile -File .\build\Publish.ps1
 ```
 
-Self-contained publishing may download Microsoft runtime packs from NuGet.org. ZIP packages include both README languages, the current changelog and license.
+Self-contained publishing may download Microsoft runtime packs from NuGet.org. ZIP packages include the READMEs, current changelog and license.
 
 ## Project
 

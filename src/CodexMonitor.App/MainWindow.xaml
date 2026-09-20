@@ -64,7 +64,7 @@
                   Command="{Binding RefreshCommand}"
                   shell:WindowChrome.IsHitTestVisibleInChrome="True"
                   Style="{StaticResource TitleBarButtonStyle}"
-                  ToolTip="立即刷新">
+                  ToolTip="{DynamicResource Text.RefreshNow}">
             <TextBlock FontFamily="Segoe Fluent Icons"
                        FontSize="15"
                        Text="&#xE72C;" />
@@ -73,7 +73,7 @@
                   Click="OnMinimizeClick"
                   shell:WindowChrome.IsHitTestVisibleInChrome="True"
                   Style="{StaticResource TitleBarButtonStyle}"
-                  ToolTip="最小化">
+                  ToolTip="{DynamicResource Text.Minimize}">
             <TextBlock FontFamily="Segoe Fluent Icons"
                        FontSize="12"
                        Text="&#xE921;" />
@@ -82,7 +82,7 @@
                   Click="OnCloseClick"
                   shell:WindowChrome.IsHitTestVisibleInChrome="True"
                   Style="{StaticResource TitleBarButtonStyle}"
-                  ToolTip="关闭并隐藏到通知区域">
+                  ToolTip="{DynamicResource Text.HideToTray}">
             <TextBlock FontFamily="Segoe Fluent Icons"
                        FontSize="12"
                        Text="&#xE8BB;" />
@@ -143,7 +143,7 @@
                      Foreground="{StaticResource SecondaryTextBrush}"
                      FontSize="11"
                      FontWeight="SemiBold"
-                     Text="RESET" />
+                     Text="{DynamicResource Text.Reset}" />
           <StackPanel Margin="0,4,0,0"
                       HorizontalAlignment="Center"
                       Orientation="Horizontal">
@@ -186,7 +186,7 @@
                        Foreground="{StaticResource SecondaryTextBrush}"
                        FontSize="9"
                        FontWeight="SemiBold"
-                       Text="SUBSCRIPTION" />
+                       Text="{DynamicResource Text.Subscription}" />
             <TextBlock Margin="8,0,0,0"
                        VerticalAlignment="Center"
                        FontSize="12"

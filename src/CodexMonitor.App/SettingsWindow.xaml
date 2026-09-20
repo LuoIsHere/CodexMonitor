@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        Title="CodexMonitor 设置"
+        Title="{DynamicResource Text.SettingsTitle}"
         Icon="Assets/CodexMonitor.ico"
-        Width="420"
+        Width="460"
         Height="610"
         AllowsTransparency="True"
         Background="Transparent"
@@ -29,6 +29,11 @@
       <Setter Property="Margin" Value="0,7" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="ContentTemplate">
+        <Setter.Value>
+          <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
     <Style x:Key="SettingsButtonStyle" TargetType="Button">
       <Setter Property="MinWidth" Value="76" />
@@ -108,12 +113,12 @@
                      VerticalAlignment="Center"
                      FontSize="13"
                      FontWeight="SemiBold"
-                     Text="设置" />
+                     Text="{DynamicResource Text.Settings}" />
           <Button Grid.Column="2"
                   Click="OnCloseClick"
                   shell:WindowChrome.IsHitTestVisibleInChrome="True"
                   Style="{StaticResource TitleBarButtonStyle}"
-                  ToolTip="关闭">
+                  ToolTip="{DynamicResource Text.Close}">
             <TextBlock FontFamily="Segoe Fluent Icons"
                        FontSize="12"
                        Text="&#xE8BB;" />
@@ -125,42 +130,50 @@
                   Margin="18,12,18,8"
                   Background="Transparent"
                   BorderThickness="0">
-        <TabItem Header="常规">
+        <TabItem Header="{DynamicResource Text.General}">
           <ScrollViewer Margin="6,13,6,0"
                         VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,10,0">
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
+                         FontWeight="SemiBold" Text="{DynamicResource Text.Language}" />
+              <ComboBox Margin="0,8,0,4" Padding="6,3" HorizontalAlignment="Left" MinWidth="200"
+                        ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="Code"
+                        SelectedValue="{Binding Language}" />
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
+                         Text="{DynamicResource Text.LanguageHint}" />
+              <Border Height="1" Margin="0,14,0,14" Background="{StaticResource DividerBrush}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
-                         FontSize="11" FontWeight="SemiBold" Text="启动" />
-              <CheckBox Content="登录 Windows 后自动启动" IsChecked="{Binding StartupEnabled}" />
-              <CheckBox Content="启动后最小化到托盘"
+                         FontSize="11" FontWeight="SemiBold" Text="{DynamicResource Text.Startup}" />
+              <CheckBox Content="{DynamicResource Text.StartupEnabled}" IsChecked="{Binding StartupEnabled}" />
+              <CheckBox Content="{DynamicResource Text.MinimizeToTray}"
                         Margin="16,4,0,4"
                         IsEnabled="{Binding StartupEnabled}"
                         IsChecked="{Binding MinimizeToTray}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
-                         Text="自动启动时仅显示托盘图标；已开启的悬浮窗仍会显示。"
+                         Text="{DynamicResource Text.StartupHint}"
                          TextWrapping="Wrap" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
-                         Text="取消最小化选项后，自动启动会显示主窗口。普通手动启动始终显示主窗口。"
+                         Text="{DynamicResource Text.StartupWindowHint}"
                          TextWrapping="Wrap" />
               <TextBlock Margin="0,6,0,0" FontSize="10" Text="{Binding StartupStatus}" TextWrapping="Wrap" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
                          Text="{Binding WindowsControlNotice}" TextWrapping="Wrap" />
-              <CheckBox Content="重新登记当前路径（保存后执行）" FontSize="11"
+              <CheckBox Content="{DynamicResource Text.RegisterCurrentPath}" FontSize="11"
                         IsEnabled="{Binding StartupEnabled}" IsChecked="{Binding RegisterCurrentPath}" />
               <Border Height="1" Margin="0,8,0,14" Background="{StaticResource DividerBrush}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
-                         Text="通知" />
-              <CheckBox Content="启用系统通知"
+                         Text="{DynamicResource Text.Notifications}" />
+              <CheckBox Content="{DynamicResource Text.NotificationsEnabled}"
                         IsChecked="{Binding NotificationsEnabled}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
                          TextWrapping="Wrap">
-                <Run Text="1. " /><Run FontWeight="SemiBold" Text="关闭主窗口转入后台时：" /><Run Text="提示“程序仍在通知区域运行”，每次运行期间最多提示一次。" />
+                <Run xml:space="preserve" Text="1. " /><Run xml:space="preserve" FontWeight="SemiBold" Text="{DynamicResource Text.BackgroundNoticeLabel}" /><Run xml:space="preserve" Text="{DynamicResource Text.BackgroundNoticeHint}" />
               </TextBlock>
               <TextBlock Margin="0,5,0,0" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
                          TextWrapping="Wrap">
-                <Run Text="2. " /><Run FontWeight="SemiBold" Text="额度刷新失败时：" /><Run Text="提示读取失败及简短原因，详细信息记录到日志。" />
+                <Run xml:space="preserve" Text="2. " /><Run xml:space="preserve" FontWeight="SemiBold" Text="{DynamicResource Text.FailureNoticeLabel}" /><Run xml:space="preserve" Text="{DynamicResource Text.FailureNoticeHint}" />
               </TextBlock>
 
               <Border Height="1"
@@ -175,11 +188,11 @@
                 <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                            FontSize="11"
                            FontWeight="SemiBold"
-                           Text="自动刷新间隔" />
+                           Text="{DynamicResource Text.RefreshInterval}" />
                 <TextBlock Grid.Column="1"
                            FontSize="12"
                            FontWeight="SemiBold"
-                           Text="{Binding RefreshIntervalMinutes, StringFormat={}{0} 分钟}" />
+                           Text="{Binding RefreshIntervalText}" />
               </Grid>
               <Slider Margin="0,8,0,0"
                       Minimum="1"
@@ -190,7 +203,7 @@
               <TextBlock Margin="0,4,0,0"
                          Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="10"
-                         Text="保存后从当前时刻重新计算下一次自动刷新。" />
+                         Text="{DynamicResource Text.RefreshIntervalHint}" />
 
               <Border Height="1"
                       Margin="0,15,0,14"
@@ -199,35 +212,35 @@
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
-                         Text="主窗口显示内容" />
-              <CheckBox Content="显示 5H 余量"
+                         Text="{DynamicResource Text.MainDisplay}" />
+              <CheckBox Content="{DynamicResource Text.ShowFiveHour}"
                         IsChecked="{Binding ShowFiveHourQuota}" />
-              <CheckBox Content="显示 7D 余量"
+              <CheckBox Content="{DynamicResource Text.ShowWeekly}"
                         IsChecked="{Binding ShowWeeklyQuota}" />
-              <CheckBox Content="显示额度重置时间"
+              <CheckBox Content="{DynamicResource Text.ShowReset}"
                         IsChecked="{Binding ShowResetTimes}" />
-              <CheckBox Content="显示订阅类型"
+              <CheckBox Content="{DynamicResource Text.ShowSubscription}"
                         IsChecked="{Binding ShowSubscription}" />
             </StackPanel>
           </ScrollViewer>
         </TabItem>
 
-        <TabItem Header="悬浮窗">
+        <TabItem Header="{DynamicResource Text.FloatingWindow}">
           <ScrollViewer Margin="6,13,6,0"
                         VerticalScrollBarVisibility="Auto">
             <StackPanel>
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
-                         Text="状态" />
-              <CheckBox Content="启用悬浮窗"
+                         Text="{DynamicResource Text.State}" />
+              <CheckBox Content="{DynamicResource Text.EnableFloating}"
                         IsChecked="{Binding FloatingWindowEnabled}" />
-              <CheckBox Content="锁定悬浮窗（鼠标点击穿透并保持置顶）"
+              <CheckBox Content="{DynamicResource Text.LockFloatingHint}"
                         IsChecked="{Binding FloatingWindowLocked}" />
               <TextBlock Margin="0,2,0,0"
                          Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="10"
-                         Text="解锁时按住悬浮窗空白区域即可拖动。锁定后可从托盘菜单解锁。"
+                         Text="{DynamicResource Text.DragHint}"
                          TextWrapping="Wrap" />
 
               <Border Height="1"
@@ -237,16 +250,16 @@
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
-                         Text="悬浮窗显示内容" />
-              <CheckBox Content="显示 5H 余量"
+                         Text="{DynamicResource Text.FloatingDisplay}" />
+              <CheckBox Content="{DynamicResource Text.ShowFiveHour}"
                         IsChecked="{Binding FloatingShowFiveHourQuota}" />
-              <CheckBox Content="显示 7D 余量"
+              <CheckBox Content="{DynamicResource Text.ShowWeekly}"
                         IsChecked="{Binding FloatingShowWeeklyQuota}" />
-              <CheckBox Content="显示最近成功更新时间"
+              <CheckBox Content="{DynamicResource Text.ShowUpdated}"
                         IsChecked="{Binding FloatingShowLastRefreshTime}" />
-              <CheckBox Content="显示额度重置时间"
+              <CheckBox Content="{DynamicResource Text.ShowReset}"
                         IsChecked="{Binding FloatingShowResetTimes}" />
-              <CheckBox Content="显示订阅类型"
+              <CheckBox Content="{DynamicResource Text.ShowSubscription}"
                         IsChecked="{Binding FloatingShowSubscription}" />
             </StackPanel>
           </ScrollViewer>
@@ -276,11 +289,11 @@
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
           <Button Click="OnCancelClick"
-                  Content="取消"
+                  Content="{DynamicResource Text.Cancel}"
                   IsCancel="True"
                   Style="{StaticResource SettingsButtonStyle}" />
           <Button Click="OnSaveClick"
-                  Content="保存"
+                  Content="{DynamicResource Text.Save}"
                   IsDefault="True"
                   Background="#FF1769E0"
                   BorderBrush="#FF2B7DE9"

@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using Microsoft.Win32;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Startup.Windows;
@@ -17,14 +18,14 @@ public sealed class WindowsRunRegistrationStore : IStartupRegistrationStore
         {
             null => null,
             string command => command,
-            _ => throw new InvalidOperationException("CodexMonitor 启动项不是字符串，请在 Windows 中检查。"),
+            _ => throw new InvalidOperationException(AppText.Get("RunValueInvalid")),
         };
     }
 
     public void Write(string command)
     {
         using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true)
-            ?? throw new IOException("无法打开当前用户的启动项。");
+            ?? throw new IOException(AppText.Get("RunKeyUnavailable"));
         key.SetValue(ValueName, command, RegistryValueKind.String);
     }
 

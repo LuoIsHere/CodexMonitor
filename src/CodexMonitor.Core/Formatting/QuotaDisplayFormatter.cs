@@ -1,4 +1,5 @@
 using System.Globalization;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Models;
 
 namespace LuoIsHere.CodexMonitor.Core.Formatting;
@@ -7,25 +8,25 @@ public static class QuotaDisplayFormatter
 {
     public const string NoneText = "None";
 
-    public static string FormatAccount(CodexAccountInfo? account)
+    public static string FormatAccount(CodexAccountInfo? account, string? language = null)
     {
         if (account is null)
         {
-            return "Unknown";
+            return AppText.GetForLanguage("Unknown", language ?? AppText.Language);
         }
 
         return account.AuthenticationType switch
         {
-            CodexAuthenticationType.ChatGpt => $"ChatGPT {FormatPlan(account.PlanType)}",
+            CodexAuthenticationType.ChatGpt => $"ChatGPT {FormatPlan(account.PlanType, language)}",
             CodexAuthenticationType.ApiKey => "Token",
             CodexAuthenticationType.Token => "Token",
-            CodexAuthenticationType.SignedOut => "Not signed in",
+            CodexAuthenticationType.SignedOut => AppText.GetForLanguage("SignedOut", language ?? AppText.Language),
             CodexAuthenticationType.Other => string.IsNullOrWhiteSpace(account.RawAccountType)
-                ? "Other"
+                ? AppText.GetForLanguage("Other", language ?? AppText.Language)
                 : account.RawAccountType,
             _ => string.IsNullOrWhiteSpace(account.PlanType)
-                ? "Unknown"
-                : $"ChatGPT {FormatPlan(account.PlanType)}",
+                ? AppText.GetForLanguage("Unknown", language ?? AppText.Language)
+                : $"ChatGPT {FormatPlan(account.PlanType, language)}",
         };
     }
 
@@ -43,7 +44,7 @@ public static class QuotaDisplayFormatter
     {
         if (window?.ResetsAt is not DateTimeOffset resetsAt)
         {
-            return window is null ? "unavailable" : "--";
+            return window is null ? AppText.Get("Unavailable") : "--";
         }
 
         var remaining = resetsAt - now;
@@ -93,11 +94,11 @@ public static class QuotaDisplayFormatter
         return resetsAt.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture);
     }
 
-    private static string FormatPlan(string? planType)
+    private static string FormatPlan(string? planType, string? language)
     {
         if (string.IsNullOrWhiteSpace(planType))
         {
-            return "Unknown";
+            return AppText.GetForLanguage("Unknown", language ?? AppText.Language);
         }
 
         return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(planType.Trim().ToLowerInvariant());

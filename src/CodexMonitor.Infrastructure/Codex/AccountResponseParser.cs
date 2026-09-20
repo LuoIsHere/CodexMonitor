@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Models;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Codex;
@@ -9,7 +10,7 @@ public static class AccountResponseParser
     {
         if (result.ValueKind != JsonValueKind.Object)
         {
-            throw new FormatException("Codex 账号响应不是对象");
+            throw new FormatException(AppText.Get("AccountResponseInvalid"));
         }
 
         if (!result.TryGetProperty("account", out var account) ||
@@ -25,7 +26,7 @@ public static class AccountResponseParser
 
         if (account.ValueKind != JsonValueKind.Object)
         {
-            throw new FormatException("Codex 账号响应中的 account 不是对象");
+            throw new FormatException(AppText.Get("AccountInvalid"));
         }
 
         var rawType = GetString(account, "type");

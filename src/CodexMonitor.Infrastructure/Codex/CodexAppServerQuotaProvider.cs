@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Models;
 
@@ -28,11 +29,11 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 
     public async Task<QuotaReadResult> ReadAsync(CancellationToken cancellationToken = default)
     {
-        var stage = "启动 Codex app-server";
+        var stage = AppText.Get("StageStart");
         var executable = _locator.Find(_configuredExecutable);
         if (string.IsNullOrWhiteSpace(executable))
         {
-            return QuotaReadResult.Failure("未找到 codex.exe；请确认 Codex 桌面版已安装");
+            return QuotaReadResult.Failure(AppText.Get("CodexNotFound"));
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -49,11 +50,11 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return QuotaReadResult.Failure($"读取 Codex 用量超时（{stage}）");
+            return QuotaReadResult.Failure(AppText.Get("ReadTimeout", stage));
         }
         catch (OperationCanceledException)
         {
-            return QuotaReadResult.Failure("读取已取消");
+            return QuotaReadResult.Failure(AppText.Get("ReadCancelled"));
         }
         catch (Exception exception)
         {
@@ -90,12 +91,12 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
         }
 
         using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("无法启动 codex.exe app-server");
+            ?? throw new InvalidOperationException(AppText.Get("CodexStartFailed"));
 
         var standardErrorTask = process.StandardError.ReadToEndAsync(cancellationToken);
         try
         {
-            reportStage("初始化");
+            reportStage(AppText.Get("StageInitialize"));
             await SendRequestAsync(process, 1, "initialize", new
             {
                 clientInfo = new { name = "codex-monitor", version = ClientVersion },
@@ -109,11 +110,11 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 
             await SendNotificationAsync(process, "initialized", cancellationToken).ConfigureAwait(false);
 
-            reportStage("读取账号");
+            reportStage(AppText.Get("StageAccount"));
             var account = await TryReadAccountAsync(process, 2, cancellationToken).ConfigureAwait(false);
             if (account?.SuppressQuotaDisplay == true)
             {
-                reportStage("解析响应");
+                reportStage(AppText.Get("StageParse"));
                 return new QuotaSnapshot(
                     null,
                     null,
@@ -123,12 +124,12 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
                     DateTimeOffset.Now);
             }
 
-            reportStage("读取额度");
+            reportStage(AppText.Get("StageQuota"));
             await SendRequestAsync(process, 3, "account/rateLimits/read", null, cancellationToken)
                 .ConfigureAwait(false);
             var result = await ReadRequiredResultAsync(process, 3, cancellationToken).ConfigureAwait(false);
 
-            reportStage("解析响应");
+            reportStage(AppText.Get("StageParse"));
             var snapshot = RateLimitResponseParser.Parse(result);
             if (account is not null)
             {
@@ -178,7 +179,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 
         if (!response.TryGetProperty("result", out var result))
         {
-            throw new InvalidOperationException("Codex 账号响应缺少 result");
+            throw new InvalidOperationException(AppText.Get("AccountResultMissing"));
         }
 
         return AccountResponseParser.Parse(result);
@@ -225,7 +226,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 
         if (!response.TryGetProperty("result", out var result))
         {
-            throw new InvalidOperationException("Codex JSON-RPC 响应缺少 result");
+            throw new InvalidOperationException(AppText.Get("RpcResultMissing"));
         }
 
         return result.Clone();
@@ -243,7 +244,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
             {
                 if (process.HasExited)
                 {
-                    throw new InvalidOperationException($"codex.exe app-server 已退出，代码 {process.ExitCode}");
+                    throw new InvalidOperationException(AppText.Get("CodexExited", process.ExitCode));
                 }
 
                 continue;
@@ -280,7 +281,7 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
             : null;
 
     private static InvalidOperationException CreateRpcException(JsonElement error)
-        => new($"Codex JSON-RPC 错误：{error.GetRawText()}");
+        => new(AppText.Get("RpcError", error.GetRawText()));
 
     private static void StopProcess(Process process)
     {
@@ -302,13 +303,13 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
     {
         return exception switch
         {
-            UnauthorizedAccessException => "无权启动 Codex app-server",
-            FileNotFoundException => "codex.exe 已不存在",
+            UnauthorizedAccessException => AppText.Get("CodexUnauthorized"),
+            FileNotFoundException => AppText.Get("CodexMissing"),
             FormatException => exception.Message,
             InvalidOperationException => exception.Message.Length <= 180
                 ? exception.Message
                 : exception.Message[..180] + "…",
-            _ => "读取 Codex 用量失败",
+            _ => AppText.Get("CodexReadFailed"),
         };
     }
 }

@@ -1,4 +1,5 @@
 using System.Reflection;
+using LuoIsHere.CodexMonitor.Core.Localization;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Startup;
 
@@ -27,13 +28,13 @@ public sealed class StartupExecutableResolver
             string.Equals(Path.GetFileName(path), "dotnet.exe", StringComparison.OrdinalIgnoreCase) ||
             path.IndexOfAny(['"', '\r', '\n']) >= 0)
         {
-            throw new InvalidOperationException("无法确定应用的实际 EXE。请直接运行发布的 CodexMonitor EXE 后再设置自启。");
+            throw new InvalidOperationException(AppText.Get("StartupTargetUnknown"));
         }
 
         path = Path.GetFullPath(path);
         if (!_fileExists(path))
         {
-            throw new InvalidOperationException("应用 EXE 已不存在，请从有效位置运行后重新登记。");
+            throw new InvalidOperationException(AppText.Get("StartupTargetMissing"));
         }
 
         // Environment.ProcessPath identifies the apphost, including single-file publishing.

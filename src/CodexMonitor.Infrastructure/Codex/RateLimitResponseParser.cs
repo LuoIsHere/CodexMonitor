@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Models;
 
 namespace LuoIsHere.CodexMonitor.Infrastructure.Codex;
@@ -11,7 +12,7 @@ public static class RateLimitResponseParser
             !result.TryGetProperty("rateLimits", out var rateLimits) ||
             rateLimits.ValueKind != JsonValueKind.Object)
         {
-            throw new FormatException("Codex 响应缺少 rateLimits 对象");
+            throw new FormatException(AppText.Get("RateLimitsMissing"));
         }
 
         var primary = ParseWindow(GetProperty(rateLimits, "primary"));

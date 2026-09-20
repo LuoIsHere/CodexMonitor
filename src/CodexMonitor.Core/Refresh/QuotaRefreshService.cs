@@ -1,3 +1,4 @@
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Models;
 
@@ -53,7 +54,7 @@ public sealed class QuotaRefreshService : IDisposable
             }
             else
             {
-                var error = string.IsNullOrWhiteSpace(result.Error) ? "未知读取错误" : result.Error;
+                var error = string.IsNullOrWhiteSpace(result.Error) ? AppText.Get("UnknownReadError") : result.Error;
                 SetState(_state with { IsRefreshing = false, Error = error });
                 _logger.Error($"Codex quota refresh failed: {error}");
             }
@@ -64,7 +65,7 @@ public sealed class QuotaRefreshService : IDisposable
         }
         catch (Exception exception)
         {
-            SetState(_state with { IsRefreshing = false, Error = "刷新时发生未处理错误" });
+            SetState(_state with { IsRefreshing = false, Error = AppText.Get("UnhandledRefreshError") });
             _logger.Error("Unexpected quota refresh failure.", exception);
         }
         finally

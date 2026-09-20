@@ -1,4 +1,6 @@
 using System.IO;
+using LuoIsHere.CodexMonitor.Core.Localization;
+using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Markup;
@@ -158,7 +160,8 @@ internal static class StartupTests
                 var service = Service(registry);
                 _ = service.ReadStatus();
                 var session = new StartupSettingsSession(settings, service, _ => Task.CompletedTask);
-                settings = settings with { RefreshIntervalMinutes = 13, Startup = settings.Startup with { MinimizeToTray = false } };
+                settings = settings with { Language = restart == 0 ? "en" : "zh-HK", RefreshIntervalMinutes = 13,
+                    Startup = settings.Startup with { MinimizeToTray = false } };
                 Check((await session.SaveAsync(settings, false)).Success, "unrelated settings saved");
             }
             Check(registry.Writes == 0 && registry.Deletes == 0 && !registry.SystemAllowsStartup && registry.Value == entry,
@@ -269,6 +272,15 @@ internal static class StartupTests
             Check(provider.Reads == 1 && viewModel.StatusText == "读取失败", "one initial refresh without a visible window");
             using var floating = new FloatingWindowViewModel(viewModel, new FloatingWindowDisplaySettings());
             Check(provider.Reads == 1, "floating view does not fetch quotas");
+            var changes = 0;
+            viewModel.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(viewModel.StatusText)) changes++; };
+            foreach (var language in new[] { "en", "zh-HK", "zh-CN" })
+            {
+                ApplicationLocalizer.Apply(language);
+                Check(viewModel.StatusText == AppText.Get("ReadFailed") && floating.AccountText == "Unknown",
+                    "main status switches language while floating account stays English");
+            }
+            Check(changes == 3 && provider.Reads == 1, "language switch updates bindings without quota reads");
             // Exercise the real one-minute DispatcherTimer without shortening production bounds.
             await provider.SecondRead.Task.WaitAsync(TimeSpan.FromSeconds(75));
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
@@ -303,37 +315,102 @@ internal static class StartupTests
             new XAttribute(XNamespace.Xmlns + "x", "http://schemas.microsoft.com/winfx/2006/xaml"),
             document.Root!.Element(presentation + "Application.Resources")!.Elements());
         Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)XamlReader.Parse(dictionary.ToString()));
+        ApplicationLocalizer.Apply("zh-CN");
 
         var registry = new MemoryStartupStore();
-        var window = new SettingsWindow(new AppSettings(), Service(registry), _ => Task.CompletedTask);
+        var arguments = Environment.GetCommandLineArgs();
+        var renderIndex = Array.IndexOf(arguments, "--render-settings");
+        var output = renderIndex >= 0 && renderIndex + 1 < arguments.Length
+            ? Path.GetFullPath(arguments[renderIndex + 1]) : null;
+        if (output is not null) Directory.CreateDirectory(output);
         try
         {
-            var viewModel = (SettingsWindowViewModel)window.DataContext;
-            Check(!viewModel.StartupEnabled && viewModel.MinimizeToTray, "settings window initial startup values");
-            Check(registry.Writes == 0 && registry.Deletes == 0, "opening settings has no registration side effects");
-            var arguments = Environment.GetCommandLineArgs();
-            var renderIndex = Array.IndexOf(arguments, "--render-settings");
-            if (renderIndex < 0 || renderIndex + 1 >= arguments.Length) return;
-
-            var output = Path.GetFullPath(arguments[renderIndex + 1]);
-            Directory.CreateDirectory(output);
-            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
-            RenderWindowContent(window, Path.Combine(output, "settings-startup-default.png"));
-            viewModel.StartupEnabled = true;
-            viewModel.SaveError = "启动项操作已完成，但配置保存失败。文件被占用。可重试保存；取消不会撤销已完成的启动项操作。";
-            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
-            RenderWindowContent(window, Path.Combine(output, "settings-startup-save-error.png"));
+            foreach (var language in new[] { "en", "zh-HK", "zh-CN" })
+            {
+                ApplicationLocalizer.Apply(language);
+                var window = new SettingsWindow(new AppSettings { Language = language }, Service(registry), _ => Task.CompletedTask);
+                try
+                {
+                    var viewModel = (SettingsWindowViewModel)window.DataContext;
+                    Check(!viewModel.StartupEnabled && viewModel.MinimizeToTray, "settings window initial startup values");
+                    Check(window.Title == AppText.Get("SettingsTitle"), "localized settings title");
+                    Check(viewModel.StartupStatus == AppText.Get("StartupMissing"), "localized startup status");
+                    var content = (FrameworkElement)window.Content;
+                    content.Measure(new Size(window.Width, window.Height));
+                    content.Arrange(new Rect(0, 0, window.Width, window.Height));
+                    content.UpdateLayout();
+                    var tabs = Descendants<TabControl>(content).Single();
+                    if (output is not null)
+                    {
+                        RenderWindowContent(window, Path.Combine(output, $"settings-{language}.png"));
+                        var scroll = Descendants<ScrollViewer>(content).First(s => s.ScrollableHeight > 0);
+                        scroll.ScrollToEnd();
+                        await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+                        RenderWindowContent(window, Path.Combine(output, $"settings-lower-{language}.png"));
+                    }
+                    tabs.SelectedIndex = 1;
+                    await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+                    if (output is not null) RenderWindowContent(window, Path.Combine(output, $"floating-settings-{language}.png"));
+                    ApplicationLocalizer.Apply(language == "en" ? "zh-CN" : "en");
+                    Check(window.Title == AppText.Get("SettingsTitle"), "settings title updates dynamically");
+                }
+                finally { window.Close(); }
+                if (output is not null) await RenderMonitorWindowsAsync(language, output);
+            }
+            Check(registry.Writes == 0 && registry.Deletes == 0, "opening localized settings never writes startup entry");
         }
-        finally { window.Close(); }
+        finally { ApplicationLocalizer.Apply("zh-CN"); }
     }
 
-    private static void RenderWindowContent(SettingsWindow window, string path)
+    private static async Task RenderMonitorWindowsAsync(string language, string output)
+    {
+        ApplicationLocalizer.Apply(language);
+        var viewModel = new MainWindowViewModel(new QuotaRefreshService(new CountingProvider(), new SilentLogger()),
+            TimeSpan.FromMinutes(3), new(true, true, true, true));
+        var window = new MainWindow(viewModel);
+        using var floatingViewModel = new FloatingWindowViewModel(viewModel, new FloatingWindowDisplaySettings
+        {
+            ShowResetTimes = true, ShowSubscription = true,
+        });
+        var floating = new FloatingWindow(floatingViewModel, new FloatingWindowSettings());
+        try
+        {
+            await viewModel.StartAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            RenderWindowContent(window, Path.Combine(output, $"main-failure-{language}.png"));
+            await viewModel.RefreshAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            window.Width = window.MinWidth;
+            RenderWindowContent(window, Path.Combine(output, $"main-{language}.png"));
+            RenderWindowContent(floating, Path.Combine(output, $"floating-{language}.png"));
+        }
+        finally
+        {
+            window.CloseForExit();
+            floating.CloseForExit();
+            await viewModel.DisposeAsync();
+        }
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match) yield return match;
+            foreach (var descendant in Descendants<T>(child)) yield return descendant;
+        }
+    }
+
+    private static void RenderWindowContent(Window window, string path)
     {
         var content = (FrameworkElement)window.Content;
-        content.Measure(new Size(window.Width, window.Height));
-        content.Arrange(new Rect(0, 0, window.Width, window.Height));
+        var height = double.IsNaN(window.Height) ? double.PositiveInfinity : window.Height;
+        content.Measure(new Size(window.Width, height));
+        if (double.IsPositiveInfinity(height)) height = content.DesiredSize.Height;
+        content.Arrange(new Rect(0, 0, window.Width, height));
         content.UpdateLayout();
-        var bitmap = new RenderTargetBitmap((int)window.Width, (int)window.Height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap((int)window.Width, (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(content);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
