@@ -1,3 +1,6 @@
+> [!Attention]
+> CodexMonitor 是个人项目，与 OpenAI 没有任何隶属关系，也没有 OpenAI 官方人员参与。
+
 # CodexMonitor
 
 [English](README.md)

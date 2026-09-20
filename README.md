@@ -1,3 +1,6 @@
+> [!Attention]
+> CodexMonitor is a personal project. It is not affiliated with OpenAI, and no OpenAI staff are involved in the project.
+
 # CodexMonitor
 
 [简体中文](README_cn.md)
