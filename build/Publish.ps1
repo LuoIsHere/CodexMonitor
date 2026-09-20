@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.3.0",
+    [string]$Version = "0.3.1",
     [string]$Runtime = "win-x64",
     [string]$PackageSource = "https://api.nuget.org/v3/index.json"
 )
@@ -80,6 +80,7 @@ if ($LASTEXITCODE -ne 0) { throw "Framework-dependent single-file publish failed
 
 $publicFiles = @(
     (Join-Path $repositoryRoot "README.md"),
+    (Join-Path $repositoryRoot "README_cn.md"),
     (Join-Path $repositoryRoot "CHANGELOG.md"),
     (Join-Path $repositoryRoot "LICENSE")
 )

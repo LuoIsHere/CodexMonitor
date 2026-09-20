@@ -5,7 +5,7 @@
         Title="CodexMonitor 设置"
         Icon="Assets/CodexMonitor.ico"
         Width="420"
-        Height="490"
+        Height="610"
         AllowsTransparency="True"
         Background="Transparent"
         Foreground="{StaticResource PrimaryTextBrush}"
@@ -85,7 +85,7 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="38" />
         <RowDefinition Height="*" />
-        <RowDefinition Height="52" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <Border Grid.Row="0"
@@ -128,13 +128,40 @@
         <TabItem Header="常规">
           <ScrollViewer Margin="6,13,6,0"
                         VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <StackPanel Margin="0,0,10,0">
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
+                         FontSize="11" FontWeight="SemiBold" Text="启动" />
+              <CheckBox Content="登录 Windows 后自动启动" IsChecked="{Binding StartupEnabled}" />
+              <CheckBox Content="启动后最小化到托盘"
+                        Margin="16,4,0,4"
+                        IsEnabled="{Binding StartupEnabled}"
+                        IsChecked="{Binding MinimizeToTray}" />
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
+                         Text="自动启动时仅显示托盘图标；已开启的悬浮窗仍会显示。"
+                         TextWrapping="Wrap" />
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
+                         Text="取消最小化选项后，自动启动会显示主窗口。普通手动启动始终显示主窗口。"
+                         TextWrapping="Wrap" />
+              <TextBlock Margin="0,6,0,0" FontSize="10" Text="{Binding StartupStatus}" TextWrapping="Wrap" />
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
+                         Text="{Binding WindowsControlNotice}" TextWrapping="Wrap" />
+              <CheckBox Content="重新登记当前路径（保存后执行）" FontSize="11"
+                        IsEnabled="{Binding StartupEnabled}" IsChecked="{Binding RegisterCurrentPath}" />
+              <Border Height="1" Margin="0,8,0,14" Background="{StaticResource DividerBrush}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
                          Text="通知" />
               <CheckBox Content="启用系统通知"
                         IsChecked="{Binding NotificationsEnabled}" />
+              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
+                         TextWrapping="Wrap">
+                <Run Text="1. " /><Run FontWeight="SemiBold" Text="关闭主窗口转入后台时：" /><Run Text="提示“程序仍在通知区域运行”，每次运行期间最多提示一次。" />
+              </TextBlock>
+              <TextBlock Margin="0,5,0,0" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
+                         TextWrapping="Wrap">
+                <Run Text="2. " /><Run FontWeight="SemiBold" Text="额度刷新失败时：" /><Run Text="提示读取失败及简短原因，详细信息记录到日志。" />
+              </TextBlock>
 
               <Border Height="1"
                       Margin="0,8,0,14"
@@ -229,7 +256,22 @@
       <Border Grid.Row="2"
               BorderBrush="{StaticResource DividerBrush}"
               BorderThickness="0,1,0,0">
-        <StackPanel Margin="16,0"
+        <StackPanel Margin="16,0">
+          <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+            <TextBlock Foreground="#FFFFB070" FontSize="11" TextWrapping="Wrap" Text="{Binding SaveError}">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Margin" Value="0,10,0,0" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding SaveError}" Value="">
+                      <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+          </ScrollViewer>
+        <StackPanel Height="52"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
@@ -243,6 +285,7 @@
                   Background="#FF1769E0"
                   BorderBrush="#FF2B7DE9"
                   Style="{StaticResource SettingsButtonStyle}" />
+        </StackPanel>
         </StackPanel>
       </Border>
     </Grid>

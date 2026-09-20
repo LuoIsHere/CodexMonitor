@@ -2,7 +2,9 @@ namespace LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 public sealed record AppSettings
 {
-    public int SchemaVersion { get; init; } = 3;
+    public int SchemaVersion { get; init; } = 4;
+
+    public StartupSettings Startup { get; init; } = new();
 
     public int RefreshIntervalMinutes { get; init; } = 3;
 
@@ -13,6 +15,13 @@ public sealed record AppSettings
     public DisplaySettings Display { get; init; } = new();
 
     public FloatingWindowSettings FloatingWindow { get; init; } = new();
+}
+
+public sealed record StartupSettings
+{
+    public bool Enabled { get; init; }
+
+    public bool MinimizeToTray { get; init; } = true;
 }
 
 public sealed record NotificationSettings

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Formatting;
@@ -21,7 +22,7 @@ var tests = new (string Name, Action Run)[]
     ("token display suppression", TestTokenDisplaySuppression),
     ("schema 1 settings migration", TestSchemaOneSettingsMigration),
     ("schema 2 settings migration", TestSchemaTwoSettingsMigration),
-    ("schema 3 settings roundtrip", TestSchemaThreeSettingsRoundtrip),
+    ("schema 4 settings roundtrip", TestSchemaFourSettingsRoundtrip),
 };
 
 if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
@@ -29,6 +30,7 @@ if (args.Contains("--live", StringComparer.OrdinalIgnoreCase))
     return await RunLiveProbeAsync();
 }
 
+tests = [.. tests, .. StartupTests.Cases];
 var failed = 0;
 foreach (var test in tests)
 {
@@ -268,7 +270,8 @@ static void TestSchemaOneSettingsMigration()
             """);
 
         var settings = new JsonSettingsStore(new SilentLogger()).LoadAsync().GetAwaiter().GetResult();
-        Equal(3, settings.SchemaVersion, "migrated schema version");
+        Equal(4, settings.SchemaVersion, "migrated schema version");
+        Equal(false, settings.Startup.Enabled, "legacy startup disabled");
         Equal(1, settings.RefreshIntervalMinutes, "clamped legacy refresh interval");
         Equal(true, settings.Notifications.Enabled, "legacy notification default");
         Equal(true, settings.Display.ShowFiveHourQuota, "legacy 5H display default");
@@ -303,7 +306,8 @@ static void TestSchemaTwoSettingsMigration()
             """);
 
         var settings = new JsonSettingsStore(new SilentLogger()).LoadAsync().GetAwaiter().GetResult();
-        Equal(3, settings.SchemaVersion, "schema 2 migrated version");
+        Equal(4, settings.SchemaVersion, "schema 2 migrated version");
+        Equal(false, settings.Startup.Enabled, "schema 2 startup disabled");
         Equal(9, settings.RefreshIntervalMinutes, "schema 2 refresh interval");
         Equal(false, settings.Notifications.Enabled, "schema 2 notification state");
         Equal(false, settings.Display.ShowFiveHourQuota, "schema 2 main display state");
@@ -312,13 +316,14 @@ static void TestSchemaTwoSettingsMigration()
     });
 }
 
-static void TestSchemaThreeSettingsRoundtrip()
+static void TestSchemaFourSettingsRoundtrip()
 {
     WithTemporarySettingsDirectory(_ =>
     {
         var expected = new AppSettings
         {
             RefreshIntervalMinutes = 17,
+            Startup = new StartupSettings { Enabled = true, MinimizeToTray = false },
             Notifications = new NotificationSettings { Enabled = false },
             Display = new DisplaySettings
             {
@@ -347,7 +352,9 @@ static void TestSchemaThreeSettingsRoundtrip()
         store.SaveAsync(expected).GetAwaiter().GetResult();
         var actual = store.LoadAsync().GetAwaiter().GetResult();
 
-        Equal(3, actual.SchemaVersion, "saved schema version");
+        Equal(4, actual.SchemaVersion, "saved schema version");
+        Equal(true, actual.Startup.Enabled, "saved startup preference");
+        Equal(false, actual.Startup.MinimizeToTray, "saved startup window preference");
         Equal(17, actual.RefreshIntervalMinutes, "saved refresh interval");
         Equal(false, actual.Notifications.Enabled, "saved notification state");
         Equal(false, actual.Display.ShowFiveHourQuota, "saved 5H state");

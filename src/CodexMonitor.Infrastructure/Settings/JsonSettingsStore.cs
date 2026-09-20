@@ -68,7 +68,8 @@ public sealed class JsonSettingsStore
     {
         return settings with
         {
-            SchemaVersion = 3,
+            SchemaVersion = 4,
+            Startup = settings.SchemaVersion < 4 ? new StartupSettings() : settings.Startup ?? new StartupSettings(),
             RefreshIntervalMinutes = Math.Clamp(settings.RefreshIntervalMinutes, 1, 60),
             CodexExecutable = string.IsNullOrWhiteSpace(settings.CodexExecutable)
                 ? null

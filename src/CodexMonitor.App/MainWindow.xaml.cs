@@ -8,16 +8,13 @@ namespace LuoIsHere.CodexMonitor.App;
 
 public partial class MainWindow : Window
 {
-    private readonly MainWindowViewModel _viewModel;
     private bool _allowClose;
 
     public MainWindow(MainWindowViewModel viewModel)
     {
         InitializeComponent();
         ConfigureBackdropMode();
-        _viewModel = viewModel;
         DataContext = viewModel;
-        Loaded += OnLoaded;
         ContentRendered += OnContentRendered;
         Closing += OnClosing;
     }
@@ -46,12 +43,6 @@ public partial class MainWindow : Window
     {
         ContentRendered -= OnContentRendered;
         WindowBackdropService.ApplyDarkAcrylic(this);
-    }
-
-    private async void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        Loaded -= OnLoaded;
-        await _viewModel.StartAsync();
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)

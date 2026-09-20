@@ -1,17 +1,20 @@
 # Changelog
 
-## 0.3.0 - 2026-08-14
+## 0.3.1 - 2026-09-20
 
 ### Added
 
-- Added a compact rounded translucent floating window for the 5-hour quota, 7-day quota, and latest successful refresh time.
-- Added independent floating-window display settings for quota values, refresh time, reset times, and subscription type.
-- Added unlocked mouse dragging with persisted window position and screen-boundary recovery; enable the floating window from the notification-area menu or the floating-window settings page, then drag it with the left mouse button.
-- Added a locked click-through mode that keeps the floating window above other windows while passing mouse input to the application underneath.
-- Added notification-area commands to enable, lock, and unlock the floating window, ensuring it can be unlocked after mouse input starts passing through.
+- Added optional current-user startup at Windows sign-in, with a default-on option to start in the notification area and retain any enabled floating window.
+- Added startup registration status, executable-path validation, and an explicit action to re-register a moved application.
+- Added startup policy, isolated registration, settings failure and WPF background lifecycle tests.
+- Added a Simplified Chinese README with language links in both versions.
 
 ### Changed
 
-- Upgraded `settings.json` to schema 3 while preserving schema 1 and schema 2 compatibility.
-- Floating-window data now shares the existing refresh state and does not issue additional Codex requests.
-- Floating-window headings and values now use shared rows with consistent baseline alignment.
+- Moved the first quota read and refresh scheduling into the application lifecycle so monitoring starts without showing the main window.
+- Automatic second instances now exit without activating the running application; manual launches retain existing activation behavior.
+- Startup registration changes only after an explicit startup edit is saved. Unrelated saves and application restarts do not restore missing entries or change Windows startup approval state.
+- Settings now use schema 4; older configurations retain their existing options with startup disabled.
+- Settings save errors remain visible in the dialog, including partial results when startup registration succeeds but configuration saving fails.
+- Release ZIPs now include both README languages.
+- Clarified system notification behavior in Settings and simplified the README.

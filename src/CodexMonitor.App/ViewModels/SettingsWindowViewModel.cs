@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
+using LuoIsHere.CodexMonitor.Infrastructure.Startup;
 
 namespace LuoIsHere.CodexMonitor.App.ViewModels;
 
@@ -20,10 +21,17 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private bool _floatingShowLastRefreshTime;
     private bool _floatingShowResetTimes;
     private bool _floatingShowSubscription;
+    private bool _startupEnabled;
+    private bool _minimizeToTray;
+    private bool _registerCurrentPath;
+    private string _startupStatus = "";
+    private string _saveError = "";
 
     public SettingsWindowViewModel(AppSettings settings)
     {
         _sourceSettings = settings;
+        _startupEnabled = settings.Startup.Enabled;
+        _minimizeToTray = settings.Startup.MinimizeToTray;
         _refreshIntervalMinutes = settings.RefreshIntervalMinutes;
         _notificationsEnabled = settings.Notifications.Enabled;
         _showFiveHourQuota = settings.Display.ShowFiveHourQuota;
@@ -40,6 +48,45 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public bool StartupEnabled
+    {
+        get => _startupEnabled;
+        set
+        {
+            SetField(ref _startupEnabled, value);
+            if (!value)
+            {
+                RegisterCurrentPath = false;
+            }
+        }
+    }
+
+    public bool MinimizeToTray
+    {
+        get => _minimizeToTray;
+        set => SetField(ref _minimizeToTray, value);
+    }
+
+    public bool RegisterCurrentPath
+    {
+        get => _registerCurrentPath;
+        set => SetField(ref _registerCurrentPath, value);
+    }
+
+    public string StartupStatus
+    {
+        get => _startupStatus;
+        set => SetField(ref _startupStatus, value);
+    }
+
+    public string SaveError
+    {
+        get => _saveError;
+        set => SetField(ref _saveError, value);
+    }
+
+    public string WindowsControlNotice => UserStartupService.WindowsControlNotice;
 
     public int RefreshIntervalMinutes
     {
@@ -122,7 +169,12 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     public AppSettings CreateSettings()
         => _sourceSettings with
         {
-            SchemaVersion = 3,
+            SchemaVersion = 4,
+            Startup = new StartupSettings
+            {
+                Enabled = StartupEnabled,
+                MinimizeToTray = MinimizeToTray,
+            },
             RefreshIntervalMinutes = RefreshIntervalMinutes,
             Notifications = new NotificationSettings
             {

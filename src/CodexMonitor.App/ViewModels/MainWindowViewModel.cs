@@ -97,7 +97,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     public async Task StartAsync()
     {
-        if (_started)
+        if (_started || _disposed)
         {
             return;
         }
@@ -169,6 +169,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     private void ApplyState(QuotaMonitorState state)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _state = state;
         RaiseDisplayProperties();
         RefreshCommand.NotifyCanExecuteChanged();

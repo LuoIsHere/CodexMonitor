@@ -6,6 +6,8 @@ using LuoIsHere.CodexMonitor.Core.Refresh;
 using LuoIsHere.CodexMonitor.Infrastructure.Codex;
 using LuoIsHere.CodexMonitor.Infrastructure.Logging;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
+using LuoIsHere.CodexMonitor.Infrastructure.Startup;
+using LuoIsHere.CodexMonitor.Infrastructure.Startup.Windows;
 
 namespace LuoIsHere.CodexMonitor.App;
 
@@ -23,17 +25,20 @@ public partial class App : System.Windows.Application
     private AppSettings _settings = new();
     private bool _exitStarted;
     private bool _activationPending;
+    private UserStartupService? _startupService;
+    private StartupOptions _startupOptions = new(false);
 
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        _startupOptions = StartupOptions.Parse(e.Args);
 
         try
         {
             _singleInstance = new SingleInstanceCoordinator();
             if (!_singleInstance.IsPrimaryInstance)
             {
-                _ = await _singleInstance.RequestActivationAsync();
+                await _startupOptions.HandleSecondaryInstanceAsync(() => _singleInstance.RequestActivationAsync());
                 await _singleInstance.DisposeAsync();
                 _singleInstance = null;
                 Shutdown();
@@ -46,6 +51,7 @@ public partial class App : System.Windows.Application
             _logger = new FileAppLogger();
             _settingsStore = new JsonSettingsStore(_logger);
             _settings = await _settingsStore.LoadAsync();
+            _startupService = new UserStartupService(new WindowsRunRegistrationStore(), new StartupExecutableResolver());
             var provider = new CodexAppServerQuotaProvider(
                 new CodexExecutableLocator(),
                 _settings.CodexExecutable,
@@ -57,16 +63,16 @@ public partial class App : System.Windows.Application
                 CreateDisplayPreferences(_settings.Display));
             _viewModel.RefreshFailed += OnRefreshFailed;
 
-            _floatingWindowService = new FloatingWindowService(
-                _viewModel,
-                _settings.FloatingWindow);
-            _floatingWindowService.SettingsChanged += OnFloatingWindowSettingsChanged;
-
             _mainWindow = new MainWindow(_viewModel);
             _mainWindow.HiddenToTray += OnWindowHiddenToTray;
             _mainWindow.StateChanged += OnMainWindowStateChanged;
             _mainWindow.IsVisibleChanged += OnMainWindowIsVisibleChanged;
             MainWindow = _mainWindow;
+
+            _floatingWindowService = new FloatingWindowService(
+                _viewModel,
+                _settings.FloatingWindow);
+            _floatingWindowService.SettingsChanged += OnFloatingWindowSettingsChanged;
 
             _trayIcon = new TrayIconService(_floatingWindowService);
             _trayIcon.OpenRequested += OnTrayOpenRequested;
@@ -74,23 +80,31 @@ public partial class App : System.Windows.Application
             _trayIcon.SettingsRequested += OnTraySettingsRequested;
             _trayIcon.ExitRequested += OnTrayExitRequested;
 
-            _mainWindow.Show();
+            if (_startupOptions.ShouldShowMainWindow(_settings.Startup))
+            {
+                _mainWindow.Show();
+            }
             UpdateTrayWindowState();
             if (_activationPending)
             {
                 _activationPending = false;
                 ActivateCurrentWindow();
             }
+
+            await _viewModel.StartAsync();
         }
         catch (Exception exception)
         {
-            DisposeTrayIcon();
-            System.Windows.MessageBox.Show(
-                $"CodexMonitor 启动失败。\n\n{exception.Message}",
-                "CodexMonitor",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            await DisposeSingleInstanceAsync();
+            _logger?.Error("Application startup failed.", exception);
+            if (!_startupOptions.IsAutomatic)
+            {
+                System.Windows.MessageBox.Show(
+                    $"CodexMonitor 启动失败。\n\n{exception.Message}",
+                    "CodexMonitor",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            await DisposeRuntimeAsync();
             Shutdown(1);
         }
     }
@@ -110,8 +124,8 @@ public partial class App : System.Windows.Application
     private void OnTrayMinimizeRequested(object? sender, EventArgs e)
         => _mainWindow?.MinimizeFromTray();
 
-    private async void OnTraySettingsRequested(object? sender, EventArgs e)
-        => await ShowSettingsAsync();
+    private void OnTraySettingsRequested(object? sender, EventArgs e)
+        => ShowSettings();
 
     private async void OnTrayExitRequested(object? sender, EventArgs e)
         => await ExitApplicationAsync();
@@ -148,6 +162,11 @@ public partial class App : System.Windows.Application
 
     private void ActivateCurrentWindow()
     {
+        if (_exitStarted)
+        {
+            return;
+        }
+
         if (_settingsWindow is not null)
         {
             if (_settingsWindow.WindowState == WindowState.Minimized)
@@ -163,15 +182,25 @@ public partial class App : System.Windows.Application
         _mainWindow?.ShowFromTray();
     }
 
-    private async Task ShowSettingsAsync()
+    private void ShowSettings()
     {
+        if (_exitStarted)
+        {
+            return;
+        }
+
         if (_settingsWindow is not null)
         {
             ActivateCurrentWindow();
             return;
         }
 
-        var settingsWindow = new SettingsWindow(_settings);
+        if (_startupService is null)
+        {
+            return;
+        }
+
+        var settingsWindow = new SettingsWindow(_settings, _startupService, SaveEditedSettingsAsync);
         if (_mainWindow?.IsVisible == true)
         {
             settingsWindow.Owner = _mainWindow;
@@ -182,33 +211,44 @@ public partial class App : System.Windows.Application
         }
 
         _settingsWindow = settingsWindow;
-        var saved = settingsWindow.ShowDialog() == true
-            ? settingsWindow.SavedSettings
-            : null;
+        settingsWindow.ShowDialog();
         _settingsWindow = null;
+    }
 
-        if (saved is null || _settingsStore is null)
+    private async Task SaveEditedSettingsAsync(AppSettings settings)
+    {
+        if (_settingsStore is null)
         {
-            return;
+            throw new InvalidOperationException("设置存储尚未就绪。");
         }
 
+        await _settingsSaveLock.WaitAsync();
         try
         {
+            // A floating window can move while the settings dialog is open.
+            var saved = settings with
+            {
+                FloatingWindow = settings.FloatingWindow with
+                {
+                    Left = _settings.FloatingWindow.Left,
+                    Top = _settings.FloatingWindow.Top,
+                },
+            };
+            await _settingsStore.SaveAsync(saved);
             _settings = saved;
             _viewModel?.ApplyPreferences(
                 TimeSpan.FromMinutes(saved.RefreshIntervalMinutes),
                 CreateDisplayPreferences(saved.Display));
             _floatingWindowService?.ApplySettings(saved.FloatingWindow);
-            await SaveCurrentSettingsAsync();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _logger?.Error("Settings could not be saved.", exception);
-            System.Windows.MessageBox.Show(
-                $"设置保存失败。\n\n{exception.Message}",
-                "CodexMonitor",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            throw;
+        }
+        finally
+        {
+            _settingsSaveLock.Release();
         }
     }
 
@@ -232,7 +272,8 @@ public partial class App : System.Windows.Application
         _exitStarted = true;
         if (_settingsWindow is not null)
         {
-            _settingsWindow.Close();
+            await _settingsWindow.WaitForSaveAsync();
+            _settingsWindow?.Close();
             _settingsWindow = null;
         }
 
@@ -245,6 +286,12 @@ public partial class App : System.Windows.Application
             _logger?.Error("Settings could not be saved during shutdown.", exception);
         }
 
+        await DisposeRuntimeAsync();
+        Shutdown();
+    }
+
+    private async Task DisposeRuntimeAsync()
+    {
         DisposeTrayIcon();
 
         if (_floatingWindowService is not null)
@@ -271,7 +318,6 @@ public partial class App : System.Windows.Application
         }
 
         await DisposeSingleInstanceAsync();
-        Shutdown();
     }
 
     private void DisposeTrayIcon()
