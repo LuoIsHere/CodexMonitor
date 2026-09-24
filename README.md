@@ -7,7 +7,7 @@
 
 A small Windows utility for viewing Codex quota, reset times, subscription type and refresh status from the notification area or a compact floating window.
 
-Version: `0.3.1`
+Version: `0.3.2`
 
 ![CodexMonitor dashboard](assets/screenshots/codex-monitor-dashboard.png)
 
@@ -17,7 +17,7 @@ Version: `0.3.1`
 - One read at startup, manual refresh, and an adjustable 1–60 minute interval (default: 3 minutes).
 - Last successful data retained after a failed read, with status and optional notifications.
 - Notification-area controls for restoring the main window, settings, floating-window controls and exit.
-- A draggable floating window with independent display settings, remembered position, and locked click-through/topmost mode. Both windows share one refresh service.
+- A draggable floating window with independent display settings, remembered position, and locked click-through/topmost mode. Both windows use the same monitor state.
 - Optional startup at Windows sign-in for the current user, with an option to start in the notification area.
 - Single-instance operation: manual launches restore the running application; automatic launches leave it undisturbed.
 - Simplified Chinese, English and Traditional Chinese (Hong Kong) for the main window, settings and tray. The floating window keeps its English labels.
@@ -33,7 +33,7 @@ Windows 10 version 1809 or later, x64, with Codex for Windows installed and sign
 | Self-contained single EXE or ZIP | No |
 | Framework-dependent single EXE or ZIP | .NET 10 Desktop Runtime x64 |
 
-EXE filenames follow these patterns (`<version>` is the release version, such as `0.3.1`):
+EXE filenames follow these patterns (`<version>` is the release version, such as `0.3.2`):
 
 - Self-contained: `CodexMonitor-<version>-win-x64-self-contained.exe`
 - Framework-dependent: `CodexMonitor-<version>-win-x64-framework-dependent.exe`
@@ -48,6 +48,7 @@ Verified Codex versions:
 | --- | --- |
 | `codex-cli 0.147.0-alpha.6.6` | 0.3.0 |
 | `codex-cli 0.155.0-alpha.2.6` | 0.3.1 |
+| Codex desktop 26.917.51856 (`codex-cli 0.155.0-alpha.16`) | 0.3.2 |
 
 The local app-server protocol may change between Codex releases.
 

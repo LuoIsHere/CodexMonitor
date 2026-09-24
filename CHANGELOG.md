@@ -1,20 +1,16 @@
 # Changelog
 
-## 0.3.1 - 2026-09-20
+## 0.3.2 - 2026-09-24
 
 ### Added
 
-- Added optional current-user startup at Windows sign-in, with a default-on option to start in the notification area and retain any enabled floating window.
-- Added startup registration status, executable-path validation, and an explicit action to re-register a moved application.
-- Added startup policy, isolated registration, settings failure and WPF background lifecycle tests.
-- Added a Simplified Chinese README with language links in both versions.
+- Added English and Traditional Chinese (Hong Kong) for the main window, settings, tray menu, notifications, and application messages. Language changes take effect after saving; Simplified Chinese remains the default.
+- Added a Traditional Chinese (Hong Kong) README and links between all three README languages.
 
 ### Changed
 
-- Moved the first quota read and refresh scheduling into the application lifecycle so monitoring starts without showing the main window.
-- Automatic second instances now exit without activating the running application; manual launches retain existing activation behavior.
-- Startup registration changes only after an explicit startup edit is saved. Unrelated saves and application restarts do not restore missing entries or change Windows startup approval state.
-- Settings now use schema 4; older configurations retain their existing options with startup disabled.
-- Settings save errors remain visible in the dialog, including partial results when startup registration succeeds but configuration saving fails.
-- Release ZIPs now include both README languages.
-- Clarified system notification behavior in Settings and simplified the README.
+- Moved the refresh schedule and shared monitoring state out of the main-window view model. The main and floating windows now subscribe independently to one application-owned monitor.
+- Kept the floating window's existing English labels and account text across language changes.
+- Saved language as an optional schema 4 setting; older configurations continue to use Simplified Chinese without changing other preferences or startup registration.
+- Release ZIPs now include all three README languages.
+- Expanded automated coverage for localization, shared refresh lifecycle, and shutdown cancellation.
