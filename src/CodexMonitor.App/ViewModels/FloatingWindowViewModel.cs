@@ -1,38 +1,45 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using LuoIsHere.CodexMonitor.App.Monitoring;
+using LuoIsHere.CodexMonitor.Core.Formatting;
+using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 namespace LuoIsHere.CodexMonitor.App.ViewModels;
 
 public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposable
 {
-    private readonly MainWindowViewModel _source;
+    private readonly QuotaMonitorCoordinator _monitor;
+    private QuotaMonitorState _state;
     private FloatingWindowDisplaySettings _display;
     private bool _disposed;
 
     public FloatingWindowViewModel(
-        MainWindowViewModel source,
+        QuotaMonitorCoordinator monitor,
         FloatingWindowDisplaySettings display)
     {
-        _source = source;
+        _monitor = monitor;
+        _state = monitor.State;
         _display = display;
-        _source.PropertyChanged += OnSourcePropertyChanged;
+        _monitor.StateChanged += OnStateChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string FiveHourPercent => _source.FiveHourPercent;
+    public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.FiveHour);
 
-    public string WeeklyPercent => _source.WeeklyPercent;
+    public string WeeklyPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.Weekly);
 
-    public string FiveHourResetTime => _source.FiveHourResetTime;
+    public string FiveHourResetTime => QuotaDisplayFormatter.FormatResetTime(Snapshot, Snapshot?.FiveHour);
 
-    public string WeeklyResetTime => _source.WeeklyResetTime;
+    public string WeeklyResetTime => QuotaDisplayFormatter.FormatResetTime(Snapshot, Snapshot?.Weekly);
 
-    public string AccountText => _source.EnglishAccountText;
+    public string AccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account, "en");
 
-    public string LastRefreshText => _source.LastRefreshText;
+    public string LastRefreshText => QuotaDisplayFormatter.FormatRefreshTime(Snapshot);
+
+    private QuotaSnapshot? Snapshot => _state.LastSuccessfulSnapshot;
 
     public Visibility FiveHourVisibility => ToVisibility(_display.ShowFiveHourQuota);
 
@@ -63,23 +70,20 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
         OnPropertyChanged(nameof(SecondDividerVisibility));
     }
 
-    private void OnSourcePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnStateChanged(object? sender, QuotaMonitorState state)
     {
-        var floatingProperty = e.PropertyName switch
+        if (_disposed)
         {
-            nameof(MainWindowViewModel.FiveHourPercent) => nameof(FiveHourPercent),
-            nameof(MainWindowViewModel.WeeklyPercent) => nameof(WeeklyPercent),
-            nameof(MainWindowViewModel.FiveHourResetTime) => nameof(FiveHourResetTime),
-            nameof(MainWindowViewModel.WeeklyResetTime) => nameof(WeeklyResetTime),
-            nameof(MainWindowViewModel.AccountText) => nameof(AccountText),
-            nameof(MainWindowViewModel.LastRefreshText) => nameof(LastRefreshText),
-            _ => null,
-        };
-
-        if (floatingProperty is not null)
-        {
-            OnPropertyChanged(floatingProperty);
+            return;
         }
+
+        _state = state;
+        OnPropertyChanged(nameof(FiveHourPercent));
+        OnPropertyChanged(nameof(WeeklyPercent));
+        OnPropertyChanged(nameof(FiveHourResetTime));
+        OnPropertyChanged(nameof(WeeklyResetTime));
+        OnPropertyChanged(nameof(AccountText));
+        OnPropertyChanged(nameof(LastRefreshText));
     }
 
     private static Visibility ToVisibility(bool value)
@@ -96,6 +100,6 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
         }
 
         _disposed = true;
-        _source.PropertyChanged -= OnSourcePropertyChanged;
+        _monitor.StateChanged -= OnStateChanged;
     }
 }

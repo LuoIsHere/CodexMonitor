@@ -94,6 +94,7 @@ The optional `codexExecutable` setting accepts a path to `codex.exe`. Automatic 
 - `CodexMonitor.App`: WPF views, tray lifecycle, single-instance activation and refresh scheduling.
 
 Quota reads use the local `codex.exe app-server` over standard input/output. The child process closes after each read; the last successful snapshot stays in memory.
+One application-level monitor schedules refreshes and shares the same state with the main and floating windows.
 
 CodexMonitor runs with standard user permissions. Authentication is delegated to Codex; the monitor does not directly read credential files or request token values. Account email fields are ignored. Local logs contain results and error text; inspect them before sharing because errors may contain machine-specific details.
 

@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.App.ViewModels;
+using LuoIsHere.CodexMonitor.App.Monitoring;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Refresh;
 using LuoIsHere.CodexMonitor.Infrastructure.Codex;
@@ -17,6 +18,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _mainWindow;
     private SettingsWindow? _settingsWindow;
     private MainWindowViewModel? _viewModel;
+    private QuotaMonitorCoordinator? _monitor;
     private TrayIconService? _trayIcon;
     private IFloatingWindowService? _floatingWindowService;
     private SingleInstanceCoordinator? _singleInstance;
@@ -59,11 +61,13 @@ public partial class App : System.Windows.Application
                 _settings.CodexExecutable,
                 _logger);
             var refreshService = new QuotaRefreshService(provider, _logger);
-            _viewModel = new MainWindowViewModel(
+            _monitor = new QuotaMonitorCoordinator(
                 refreshService,
-                TimeSpan.FromMinutes(_settings.RefreshIntervalMinutes),
+                TimeSpan.FromMinutes(_settings.RefreshIntervalMinutes));
+            _viewModel = new MainWindowViewModel(
+                _monitor,
                 CreateDisplayPreferences(_settings.Display));
-            _viewModel.RefreshFailed += OnRefreshFailed;
+            _monitor.RefreshFailed += OnRefreshFailed;
 
             _mainWindow = new MainWindow(_viewModel);
             _mainWindow.HiddenToTray += OnWindowHiddenToTray;
@@ -72,7 +76,7 @@ public partial class App : System.Windows.Application
             MainWindow = _mainWindow;
 
             _floatingWindowService = new FloatingWindowService(
-                _viewModel,
+                _monitor,
                 _settings.FloatingWindow);
             _floatingWindowService.SettingsChanged += OnFloatingWindowSettingsChanged;
 
@@ -93,7 +97,7 @@ public partial class App : System.Windows.Application
                 ActivateCurrentWindow();
             }
 
-            await _viewModel.StartAsync();
+            await _monitor.StartAsync();
         }
         catch (Exception exception)
         {
@@ -239,9 +243,8 @@ public partial class App : System.Windows.Application
             await _settingsStore.SaveAsync(saved);
             _settings = saved;
             ApplicationLocalizer.Apply(saved.Language);
-            _viewModel?.ApplyPreferences(
-                TimeSpan.FromMinutes(saved.RefreshIntervalMinutes),
-                CreateDisplayPreferences(saved.Display));
+            _monitor?.SetRefreshInterval(TimeSpan.FromMinutes(saved.RefreshIntervalMinutes));
+            _viewModel?.ApplyDisplayPreferences(CreateDisplayPreferences(saved.Display));
             _floatingWindowService?.ApplySettings(saved.FloatingWindow);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -306,9 +309,15 @@ public partial class App : System.Windows.Application
 
         if (_viewModel is not null)
         {
-            _viewModel.RefreshFailed -= OnRefreshFailed;
-            await _viewModel.DisposeAsync();
+            _viewModel.Dispose();
             _viewModel = null;
+        }
+
+        if (_monitor is not null)
+        {
+            _monitor.RefreshFailed -= OnRefreshFailed;
+            await _monitor.DisposeAsync();
+            _monitor = null;
         }
 
         if (_mainWindow is not null)

@@ -1,21 +1,22 @@
 using LuoIsHere.CodexMonitor.App.ViewModels;
+using LuoIsHere.CodexMonitor.App.Monitoring;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 
 namespace LuoIsHere.CodexMonitor.App;
 
 public sealed class FloatingWindowService : IFloatingWindowService
 {
-    private readonly MainWindowViewModel _sourceViewModel;
+    private readonly QuotaMonitorCoordinator _monitor;
     private FloatingWindowSettings _settings;
     private FloatingWindowViewModel? _viewModel;
     private FloatingWindow? _window;
     private bool _disposed;
 
     public FloatingWindowService(
-        MainWindowViewModel sourceViewModel,
+        QuotaMonitorCoordinator monitor,
         FloatingWindowSettings settings)
     {
-        _sourceViewModel = sourceViewModel;
+        _monitor = monitor;
         _settings = settings;
 
         if (settings.Enabled)
@@ -103,7 +104,7 @@ public sealed class FloatingWindowService : IFloatingWindowService
             return;
         }
 
-        _viewModel = new FloatingWindowViewModel(_sourceViewModel, _settings.Display);
+        _viewModel = new FloatingWindowViewModel(_monitor, _settings.Display);
         _window = new FloatingWindow(_viewModel, _settings);
         _window.PositionChanged += OnWindowPositionChanged;
     }

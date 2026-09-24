@@ -1,58 +1,41 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Threading;
-using LuoIsHere.CodexMonitor.Core.Localization;
+using LuoIsHere.CodexMonitor.App.Monitoring;
 using LuoIsHere.CodexMonitor.Core.Formatting;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Models;
-using LuoIsHere.CodexMonitor.Core.Refresh;
 using MediaBrush = System.Windows.Media.Brush;
 using MediaBrushes = System.Windows.Media.Brushes;
 
 namespace LuoIsHere.CodexMonitor.App.ViewModels;
 
-public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
+public sealed class MainWindowViewModel : INotifyPropertyChanged, IDisposable
 {
-    private readonly QuotaRefreshService _refreshService;
-    private readonly CancellationTokenSource _lifetime = new();
-    private readonly object _activeRefreshLock = new();
-    private readonly HashSet<Task> _activeRefreshTasks = [];
-    private readonly DispatcherTimer _refreshTimer;
+    private readonly QuotaMonitorCoordinator _monitor;
     private DisplayPreferences _displayPreferences;
     private QuotaMonitorState _state;
-    private DateTimeOffset? _lastNotifiedFailureAttemptAt;
-    private bool _started;
     private bool _disposed;
 
     public MainWindowViewModel(
-        QuotaRefreshService refreshService,
-        TimeSpan refreshInterval,
+        QuotaMonitorCoordinator monitor,
         DisplayPreferences displayPreferences)
     {
-        _refreshService = refreshService;
+        _monitor = monitor;
         _displayPreferences = displayPreferences;
-        _state = refreshService.State;
-        _refreshTimer = new DispatcherTimer(DispatcherPriority.Background)
-        {
-            Interval = NormalizeRefreshInterval(refreshInterval),
-        };
-        _refreshTimer.Tick += OnRefreshTimerTick;
+        _state = monitor.State;
         RefreshCommand = new AsyncCommand(
-            RefreshAsync,
-            () => !_state.IsRefreshing);
-        _refreshService.StateChanged += OnStateChanged;
+            monitor.RefreshAsync,
+            () => !_disposed && !_state.IsRefreshing);
+        _monitor.StateChanged += OnStateChanged;
         AppText.LanguageChanged += OnLanguageChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public event EventHandler<RefreshFailedEventArgs>? RefreshFailed;
-
     public AsyncCommand RefreshCommand { get; }
 
     public string AccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account);
-
-    public string EnglishAccountText => QuotaDisplayFormatter.FormatAccount(Snapshot?.Account, "en");
 
     public string FiveHourPercent => QuotaDisplayFormatter.FormatPercent(Snapshot, Snapshot?.FiveHour);
 
@@ -99,79 +82,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
 
     private QuotaSnapshot? Snapshot => _state.LastSuccessfulSnapshot;
 
-    public async Task StartAsync()
-    {
-        if (_started || _disposed)
-        {
-            return;
-        }
-
-        _started = true;
-        await RefreshAsync();
-        if (!_disposed)
-        {
-            _refreshTimer.Start();
-        }
-    }
-
-    public void ApplyPreferences(TimeSpan refreshInterval, DisplayPreferences displayPreferences)
+    public void ApplyDisplayPreferences(DisplayPreferences displayPreferences)
     {
         _displayPreferences = displayPreferences;
-        _refreshTimer.Interval = NormalizeRefreshInterval(refreshInterval);
-        if (_started && !_disposed)
-        {
-            _refreshTimer.Stop();
-            _refreshTimer.Start();
-        }
-
         RaiseDisplaySettingsProperties();
     }
 
-    public Task RefreshAsync()
-    {
-        Task refreshTask;
-        lock (_activeRefreshLock)
-        {
-            if (_disposed)
-            {
-                return Task.CompletedTask;
-            }
-
-            refreshTask = _refreshService.RefreshAsync(_lifetime.Token);
-            _activeRefreshTasks.Add(refreshTask);
-        }
-
-        return AwaitAndUntrackRefreshAsync(refreshTask);
-    }
-
-    private async Task AwaitAndUntrackRefreshAsync(Task refreshTask)
-    {
-        try
-        {
-            await refreshTask;
-        }
-        finally
-        {
-            lock (_activeRefreshLock)
-            {
-                _activeRefreshTasks.Remove(refreshTask);
-            }
-        }
-    }
-
     private void OnStateChanged(object? sender, QuotaMonitorState state)
-    {
-        if (System.Windows.Application.Current.Dispatcher.CheckAccess())
-        {
-            ApplyState(state);
-        }
-        else
-        {
-            _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ApplyState(state));
-        }
-    }
-
-    private void ApplyState(QuotaMonitorState state)
     {
         if (_disposed)
         {
@@ -181,14 +98,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         _state = state;
         RaiseDisplayProperties();
         RefreshCommand.NotifyCanExecuteChanged();
-
-        if (state.Error is not null &&
-            state.LastAttemptAt is DateTimeOffset attemptAt &&
-            attemptAt != _lastNotifiedFailureAttemptAt)
-        {
-            _lastNotifiedFailureAttemptAt = attemptAt;
-            RefreshFailed?.Invoke(this, new RefreshFailedEventArgs(state.Error, attemptAt));
-        }
     }
 
     private void RaiseDisplayProperties()
@@ -218,25 +127,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
         OnPropertyChanged(nameof(SecondDividerWidth));
     }
 
-    private async void OnRefreshTimerTick(object? sender, EventArgs e)
-    {
-        _refreshTimer.Stop();
-        try
-        {
-            await RefreshAsync();
-        }
-        finally
-        {
-            if (!_disposed)
-            {
-                _refreshTimer.Start();
-            }
-        }
-    }
-
-    private static TimeSpan NormalizeRefreshInterval(TimeSpan interval)
-        => TimeSpan.FromMinutes(Math.Clamp(interval.TotalMinutes, 1, 60));
-
     private static Visibility ToVisibility(bool isVisible)
         => isVisible ? Visibility.Visible : Visibility.Collapsed;
 
@@ -249,37 +139,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged, IAsyncDisposab
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        Task[] activeRefreshTasks;
-        lock (_activeRefreshLock)
+        if (_disposed)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            activeRefreshTasks = [.. _activeRefreshTasks];
+            return;
         }
 
-        _refreshService.StateChanged -= OnStateChanged;
+        _disposed = true;
+        _monitor.StateChanged -= OnStateChanged;
         AppText.LanguageChanged -= OnLanguageChanged;
-        _refreshTimer.Stop();
-        _refreshTimer.Tick -= OnRefreshTimerTick;
-        await _lifetime.CancelAsync();
-
-        try
-        {
-            await Task.WhenAll(activeRefreshTasks);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during shutdown.
-        }
-
-        _refreshService.Dispose();
-        _lifetime.Dispose();
+        RefreshCommand.NotifyCanExecuteChanged();
     }
 }
 
@@ -289,9 +159,3 @@ public sealed record DisplayPreferences(
     bool ShowResetTimes,
     bool ShowSubscription);
 
-public sealed class RefreshFailedEventArgs(string message, DateTimeOffset attemptedAt) : EventArgs
-{
-    public string Message { get; } = message;
-
-    public DateTimeOffset AttemptedAt { get; } = attemptedAt;
-}

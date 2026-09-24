@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using LuoIsHere.CodexMonitor.App;
 using LuoIsHere.CodexMonitor.App.ViewModels;
+using LuoIsHere.CodexMonitor.App.Monitoring;
 using LuoIsHere.CodexMonitor.Core.Abstractions;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Core.Refresh;
@@ -264,14 +265,19 @@ internal static class StartupTests
         await TestSettingsWindowAsync();
         var provider = new CountingProvider();
         var service = new QuotaRefreshService(provider, new SilentLogger());
-        var viewModel = new MainWindowViewModel(service, TimeSpan.FromMinutes(1), new(true, true, true, true));
+        var monitor = new QuotaMonitorCoordinator(service, TimeSpan.FromMinutes(1));
+        using var viewModel = new MainWindowViewModel(monitor, new(true, true, true, true));
         try
         {
-            await viewModel.StartAsync();
-            await viewModel.StartAsync();
+            var notifications = 0;
+            monitor.RefreshFailed += (_, _) => notifications++;
+            await monitor.StartAsync();
+            await monitor.StartAsync();
             Check(provider.Reads == 1 && viewModel.StatusText == "读取失败", "one initial refresh without a visible window");
-            using var floating = new FloatingWindowViewModel(viewModel, new FloatingWindowDisplaySettings());
-            Check(provider.Reads == 1, "floating view does not fetch quotas");
+            Check(notifications == 1, "one failure notification per attempt");
+            using var floating = new FloatingWindowViewModel(monitor, new FloatingWindowDisplaySettings());
+            using var reopened = new MainWindowViewModel(monitor, new(true, true, true, true));
+            Check(provider.Reads == 1 && reopened.StatusText == "读取失败", "opening either view does not fetch quotas");
             var changes = 0;
             viewModel.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(viewModel.StatusText)) changes++; };
             foreach (var language in new[] { "en", "zh-HK", "zh-CN" })
@@ -285,24 +291,45 @@ internal static class StartupTests
             await provider.SecondRead.Task.WaitAsync(TimeSpan.FromSeconds(75));
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
             Check(provider.Reads == 2 && viewModel.StatusText == "正常", "periodic refresh recovers after initial failure");
-            Check(viewModel.FiveHourPercent == "75%" && floating.FiveHourPercent == "75%", "shared floating data updates");
-            await viewModel.StartAsync();
-            Check(provider.Reads == 2, "reopening cannot repeat initialization");
+            Check(viewModel.FiveHourPercent == "75%" && reopened.FiveHourPercent == "75%" &&
+                floating.FiveHourPercent == "75%", "both views receive the same state");
+            viewModel.Dispose();
+            await monitor.RefreshAsync();
+            Check(provider.Reads == 3 && floating.FiveHourPercent == "75%", "floating view keeps updating after main view disposal");
+            Check(notifications == 1, "successful refresh does not repeat failure notification");
         }
-        finally { await viewModel.DisposeAsync(); }
-        await viewModel.StartAsync();
-        await viewModel.RefreshAsync();
-        Check(provider.Reads == 2, "disposed monitor never restarts");
+        finally { await monitor.DisposeAsync(); }
+        await monitor.StartAsync();
+        await monitor.RefreshAsync();
+        Check(provider.Reads == 3, "disposed monitor never restarts");
+
+        var floatingOnlyProvider = new CountingProvider();
+        var floatingOnlyMonitor = new QuotaMonitorCoordinator(
+            new QuotaRefreshService(floatingOnlyProvider, new SilentLogger()), TimeSpan.FromMinutes(1));
+        try
+        {
+            using var floatingOnly = new FloatingWindowViewModel(floatingOnlyMonitor, new FloatingWindowDisplaySettings());
+            await floatingOnlyMonitor.StartAsync();
+            await floatingOnlyMonitor.RefreshAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            Check(floatingOnlyProvider.Reads == 2 && floatingOnly.FiveHourPercent == "75%" &&
+                floatingOnly.AccountText == "ChatGPT Plus", "floating view works without a main view model");
+        }
+        finally { await floatingOnlyMonitor.DisposeAsync(); }
 
         var pending = new BlockingProvider();
-        var pendingViewModel = new MainWindowViewModel(new QuotaRefreshService(pending, new SilentLogger()),
-            TimeSpan.FromMinutes(1), new(true, true, true, true));
-        var startup = pendingViewModel.StartAsync();
+        var pendingMonitor = new QuotaMonitorCoordinator(new QuotaRefreshService(pending, new SilentLogger()),
+            TimeSpan.FromMinutes(1));
+        using var pendingMain = new MainWindowViewModel(pendingMonitor, new(true, true, true, true));
+        using var pendingFloating = new FloatingWindowViewModel(pendingMonitor, new FloatingWindowDisplaySettings());
+        var startup = pendingMonitor.StartAsync();
         await pending.Started.Task;
-        await pendingViewModel.DisposeAsync();
+        pendingMain.Dispose();
+        pendingFloating.Dispose();
+        await pendingMonitor.DisposeAsync();
         await startup;
         Check(pending.Cancelled, "exit cancels and waits for outstanding read");
-        await pendingViewModel.DisposeAsync();
+        await pendingMonitor.DisposeAsync();
     }
 
     private static async Task TestSettingsWindowAsync()
@@ -365,20 +392,21 @@ internal static class StartupTests
     private static async Task RenderMonitorWindowsAsync(string language, string output)
     {
         ApplicationLocalizer.Apply(language);
-        var viewModel = new MainWindowViewModel(new QuotaRefreshService(new CountingProvider(), new SilentLogger()),
-            TimeSpan.FromMinutes(3), new(true, true, true, true));
+        var monitor = new QuotaMonitorCoordinator(new QuotaRefreshService(new CountingProvider(), new SilentLogger()),
+            TimeSpan.FromMinutes(3));
+        using var viewModel = new MainWindowViewModel(monitor, new(true, true, true, true));
         var window = new MainWindow(viewModel);
-        using var floatingViewModel = new FloatingWindowViewModel(viewModel, new FloatingWindowDisplaySettings
+        using var floatingViewModel = new FloatingWindowViewModel(monitor, new FloatingWindowDisplaySettings
         {
             ShowResetTimes = true, ShowSubscription = true,
         });
         var floating = new FloatingWindow(floatingViewModel, new FloatingWindowSettings());
         try
         {
-            await viewModel.StartAsync();
+            await monitor.StartAsync();
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
             RenderWindowContent(window, Path.Combine(output, $"main-failure-{language}.png"));
-            await viewModel.RefreshAsync();
+            await monitor.RefreshAsync();
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
             window.Width = window.MinWidth;
             RenderWindowContent(window, Path.Combine(output, $"main-{language}.png"));
@@ -388,7 +416,7 @@ internal static class StartupTests
         {
             window.CloseForExit();
             floating.CloseForExit();
-            await viewModel.DisposeAsync();
+            await monitor.DisposeAsync();
         }
     }
 
