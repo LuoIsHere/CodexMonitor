@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Ellipse = System.Windows.Shapes.Ellipse;
 using System.Xml.Linq;
 using LuoIsHere.CodexMonitor.App;
 using LuoIsHere.CodexMonitor.App.ViewModels;
@@ -257,12 +258,13 @@ internal static class StartupTests
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         Check(thread.Join(TimeSpan.FromSeconds(85)), "WPF test timeout");
-        if (failure is not null) throw new InvalidOperationException("WPF lifecycle failed", failure);
+        if (failure is not null) throw new InvalidOperationException($"WPF lifecycle failed: {failure.Message}", failure);
     }
 
     private static async Task TestWpfLifecycleAsync()
     {
         await TestSettingsWindowAsync();
+        await TestFloatingStatusAndLayoutAsync();
         var provider = new CountingProvider();
         var service = new QuotaRefreshService(provider, new SilentLogger());
         var monitor = new QuotaMonitorCoordinator(service, TimeSpan.FromMinutes(1));
@@ -324,12 +326,132 @@ internal static class StartupTests
         using var pendingFloating = new FloatingWindowViewModel(pendingMonitor, new FloatingWindowDisplaySettings());
         var startup = pendingMonitor.StartAsync();
         await pending.Started.Task;
+        Check(ReferenceEquals(pendingFloating.StatusBrush, Brushes.DodgerBlue) &&
+            pendingFloating.StatusText == AppText.GetForLanguage("Refreshing", "en"),
+            "floating status is blue during an outstanding read");
         pendingMain.Dispose();
         pendingFloating.Dispose();
         await pendingMonitor.DisposeAsync();
         await startup;
         Check(pending.Cancelled, "exit cancels and waits for outstanding read");
         await pendingMonitor.DisposeAsync();
+    }
+
+    private static async Task TestFloatingStatusAndLayoutAsync()
+    {
+        var arguments = Environment.GetCommandLineArgs();
+        var renderIndex = Array.IndexOf(arguments, "--render-settings");
+        var renderOutput = renderIndex >= 0 && renderIndex + 1 < arguments.Length
+            ? Path.GetFullPath(arguments[renderIndex + 1]) : null;
+        var snapshot = new QuotaSnapshot("codex", null,
+            new CodexAccountInfo(CodexAuthenticationType.ChatGpt, "chatgpt", "plus"),
+            new QuotaWindow("5H", 25, 75, 300, DateTimeOffset.Now.AddHours(1)),
+            null, DateTimeOffset.Now);
+        var provider = new SequencedProvider(
+            QuotaReadResult.Failure("initial failure"),
+            QuotaReadResult.Success(snapshot),
+            QuotaReadResult.Failure("later failure"));
+        var monitor = new QuotaMonitorCoordinator(new QuotaRefreshService(provider, new SilentLogger()),
+            TimeSpan.FromMinutes(1));
+        using var viewModel = new FloatingWindowViewModel(monitor, new FloatingWindowDisplaySettings());
+        var window = new FloatingWindow(viewModel, new FloatingWindowSettings());
+        try
+        {
+            var content = (FrameworkElement)window.Content;
+            var dot = Descendants<Ellipse>(content).Single();
+            var summaryRow = Descendants<Grid>(content).Single(element => element.Name == "SummaryRow");
+            var resetRow = Descendants<Grid>(content).Single(element => element.Name == "ResetRow");
+            var subscriptionRow = Descendants<StackPanel>(content)
+                .Single(element => element.Name == "SubscriptionRow");
+            content.Measure(new Size(window.Width, double.PositiveInfinity));
+            content.Arrange(new Rect(0, 0, window.Width, content.DesiredSize.Height));
+            content.UpdateLayout();
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            Check(ReferenceEquals(dot.Fill, Brushes.Gray) &&
+                viewModel.StatusText == AppText.GetForLanguage("Waiting", "en"),
+                "floating status waits before the first read");
+            if (renderOutput is not null)
+                RenderWindowContent(window, Path.Combine(renderOutput, "floating-status-gray.png"));
+
+            await monitor.StartAsync();
+            Check(ReferenceEquals(dot.Fill, Brushes.Firebrick) &&
+                viewModel.StatusText == AppText.GetForLanguage("ReadFailed", "en"),
+                "floating status is red after a failure without data");
+            if (renderOutput is not null)
+                RenderWindowContent(window, Path.Combine(renderOutput, "floating-status-red.png"));
+            await monitor.RefreshAsync();
+            Check(ReferenceEquals(dot.Fill, Brushes.ForestGreen) &&
+                viewModel.StatusText == AppText.GetForLanguage("Healthy", "en"),
+                "floating status is green after a successful read");
+            if (renderOutput is not null)
+                RenderWindowContent(window, Path.Combine(renderOutput, "floating-status-green.png"));
+            await monitor.RefreshAsync();
+            Check(ReferenceEquals(dot.Fill, Brushes.DarkOrange) &&
+                viewModel.StatusText == AppText.GetForLanguage("Stale", "en"),
+                "floating status is orange when a failure retains the last snapshot");
+            if (renderOutput is not null)
+                RenderWindowContent(window, Path.Combine(renderOutput, "floating-status-orange.png"));
+
+            var fullHeight = 0d;
+            var minimalHeight = 0d;
+            for (var mask = 0; mask < 32; mask++)
+            {
+                var display = new FloatingWindowDisplaySettings
+                {
+                    ShowFiveHourQuota = (mask & 1) != 0,
+                    ShowWeeklyQuota = (mask & 2) != 0,
+                    ShowLastRefreshTime = (mask & 4) != 0,
+                    ShowResetTimes = (mask & 8) != 0,
+                    ShowSubscription = (mask & 16) != 0,
+                };
+                viewModel.ApplyDisplaySettings(display);
+                content.Measure(new Size(window.Width, double.PositiveInfinity));
+                content.Arrange(new Rect(0, 0, window.Width, content.DesiredSize.Height));
+                content.UpdateLayout();
+
+                var bounds = dot.TransformToAncestor(content).TransformBounds(
+                    new Rect(new Size(dot.ActualWidth, dot.ActualHeight)));
+                Check(dot.Visibility == Visibility.Visible &&
+                    dot.ActualWidth is >= 6 and <= 9 && dot.ActualHeight is >= 6 and <= 9 &&
+                    bounds.Right > content.ActualWidth - 30 && bounds.Right < content.ActualWidth &&
+                    bounds.Bottom > content.ActualHeight - 24 && bounds.Bottom < content.ActualHeight,
+                    $"floating status dot stays in the bottom-right corner for display mask {mask}: " +
+                    $"dot={dot.ActualWidth}x{dot.ActualHeight}, bounds={bounds}, content={content.ActualWidth}x{content.ActualHeight}");
+                Check(viewModel.TopSummaryVisibility == ((mask & 7) == 0 ? Visibility.Collapsed : Visibility.Visible),
+                    $"floating summary visibility matches display mask {mask}");
+
+                FrameworkElement? lastRow = (mask & 16) != 0 ? subscriptionRow :
+                    (mask & 8) != 0 ? resetRow :
+                    (mask & 7) != 0 ? summaryRow : null;
+                if (lastRow is not null)
+                {
+                    var rowBounds = lastRow.TransformToAncestor(content).TransformBounds(
+                        new Rect(new Size(lastRow.ActualWidth, lastRow.ActualHeight)));
+                    Check(bounds.Top < rowBounds.Bottom - 0.5 && bounds.Bottom > rowBounds.Top + 0.5 &&
+                        bounds.Left > rowBounds.Right,
+                        $"floating status dot shares the last visible row without covering it for display mask {mask}: " +
+                        $"dot={bounds}, lastRow={rowBounds}");
+                }
+                else
+                {
+                    Check(content.DesiredSize.Height <= dot.ActualHeight + 20,
+                        $"floating status dot has no dedicated row when all fields are hidden: " +
+                        $"contentHeight={content.DesiredSize.Height}, dotHeight={dot.ActualHeight}");
+                }
+
+                if (mask == 0) minimalHeight = content.DesiredSize.Height;
+                if (mask == 31) fullHeight = content.DesiredSize.Height;
+                if (renderOutput is not null && mask is 0 or 1 or 8 or 16 or 31)
+                    RenderWindowContent(window, Path.Combine(renderOutput, $"floating-layout-mask-{mask}.png"));
+            }
+
+            Check(minimalHeight < fullHeight, "floating window shrinks to the status dot when all fields are hidden");
+        }
+        finally
+        {
+            window.CloseForExit();
+            await monitor.DisposeAsync();
+        }
     }
 
     private static async Task TestSettingsWindowAsync()
@@ -494,6 +616,14 @@ internal static class StartupTests
                 new CodexAccountInfo(CodexAuthenticationType.ChatGpt, "chatgpt", "plus"),
                 new QuotaWindow("5H", 25, 75, 300, DateTimeOffset.Now.AddHours(1)), null, DateTimeOffset.Now)));
         }
+    }
+
+    private sealed class SequencedProvider(params QuotaReadResult[] results) : IQuotaProvider
+    {
+        private readonly Queue<QuotaReadResult> _results = new(results);
+
+        public Task<QuotaReadResult> ReadAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_results.Dequeue());
     }
 
     private sealed class BlockingProvider : IQuotaProvider

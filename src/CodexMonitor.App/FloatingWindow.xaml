@@ -19,8 +19,11 @@
           BorderThickness="1"
           CornerRadius="6"
           Padding="10,7">
-    <StackPanel>
-      <Grid HorizontalAlignment="Center">
+    <Grid>
+      <StackPanel>
+      <Grid x:Name="SummaryRow"
+            HorizontalAlignment="Center"
+            Visibility="{Binding TopSummaryVisibility}">
         <Grid.RowDefinitions>
           <RowDefinition Height="12" />
           <RowDefinition Height="21" />
@@ -118,7 +121,8 @@
                    Visibility="{Binding LastRefreshVisibility}" />
       </Grid>
 
-      <Grid Margin="1,6,1,0"
+      <Grid x:Name="ResetRow"
+            Margin="1,6,14,0"
             Visibility="{Binding ResetTimesVisibility}">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
@@ -159,7 +163,8 @@
                    Text="{Binding WeeklyResetTime}" />
       </Grid>
 
-      <StackPanel Margin="1,6,1,0"
+      <StackPanel x:Name="SubscriptionRow"
+                  Margin="1,6,14,0"
                   Orientation="Horizontal"
                   Visibility="{Binding SubscriptionVisibility}">
         <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
@@ -171,6 +176,15 @@
                    FontWeight="SemiBold"
                    Text="{Binding AccountText}" />
       </StackPanel>
-    </StackPanel>
+      </StackPanel>
+      <Ellipse Width="7"
+               Height="7"
+               Margin="0,0,1,2"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom"
+               Fill="{Binding StatusBrush}"
+               ToolTip="{Binding StatusText}"
+               AutomationProperties.Name="{Binding StatusText}" />
+    </Grid>
   </Border>
 </Window>

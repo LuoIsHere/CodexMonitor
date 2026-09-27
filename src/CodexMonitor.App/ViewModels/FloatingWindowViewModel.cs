@@ -3,8 +3,11 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using LuoIsHere.CodexMonitor.App.Monitoring;
 using LuoIsHere.CodexMonitor.Core.Formatting;
+using LuoIsHere.CodexMonitor.Core.Localization;
 using LuoIsHere.CodexMonitor.Core.Models;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
+using MediaBrush = System.Windows.Media.Brush;
+using MediaBrushes = System.Windows.Media.Brushes;
 
 namespace LuoIsHere.CodexMonitor.App.ViewModels;
 
@@ -39,7 +42,28 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
 
     public string LastRefreshText => QuotaDisplayFormatter.FormatRefreshTime(Snapshot);
 
+    public MediaBrush StatusBrush => _state.IsRefreshing
+        ? MediaBrushes.DodgerBlue
+        : _state.Error is not null
+            ? Snapshot is null ? MediaBrushes.Firebrick : MediaBrushes.DarkOrange
+            : Snapshot is null ? MediaBrushes.Gray : MediaBrushes.ForestGreen;
+
+    public string StatusText => _state.IsRefreshing
+        ? AppText.GetForLanguage("Refreshing", "en")
+        : _state.Error is not null
+            ? Snapshot is null
+                ? AppText.GetForLanguage("ReadFailed", "en")
+                : AppText.GetForLanguage("Stale", "en")
+            : Snapshot is null
+                ? AppText.GetForLanguage("Waiting", "en")
+                : AppText.GetForLanguage("Healthy", "en");
+
     private QuotaSnapshot? Snapshot => _state.LastSuccessfulSnapshot;
+
+    public Visibility TopSummaryVisibility => ToVisibility(
+        _display.ShowFiveHourQuota ||
+        _display.ShowWeeklyQuota ||
+        _display.ShowLastRefreshTime);
 
     public Visibility FiveHourVisibility => ToVisibility(_display.ShowFiveHourQuota);
 
@@ -61,6 +85,7 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
     public void ApplyDisplaySettings(FloatingWindowDisplaySettings display)
     {
         _display = display;
+        OnPropertyChanged(nameof(TopSummaryVisibility));
         OnPropertyChanged(nameof(FiveHourVisibility));
         OnPropertyChanged(nameof(WeeklyVisibility));
         OnPropertyChanged(nameof(LastRefreshVisibility));
@@ -84,6 +109,8 @@ public sealed class FloatingWindowViewModel : INotifyPropertyChanged, IDisposabl
         OnPropertyChanged(nameof(WeeklyResetTime));
         OnPropertyChanged(nameof(AccountText));
         OnPropertyChanged(nameof(LastRefreshText));
+        OnPropertyChanged(nameof(StatusBrush));
+        OnPropertyChanged(nameof(StatusText));
     }
 
     private static Visibility ToVisibility(bool value)

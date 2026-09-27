@@ -11,8 +11,12 @@ TestResults/
 
 # Local-only development records requested by the project owner.
 docs/
+/Docs/
+/ci/
+
+# Local executable output for development testing.
+/Release/
 
 # Runtime state must never be committed.
 settings.json
 logs/
-
