@@ -15,6 +15,7 @@ internal static class LocalizationTests
         ("complete translations and matching format arguments", TestTranslations),
         ("language persistence and legacy fallback", TestLanguageSettings),
         ("language draft is inert until saved", TestLanguageDraft),
+        ("settings help translations", TestHelpTranslations),
     ];
 
     private static void TestTranslations()
@@ -55,6 +56,22 @@ internal static class LocalizationTests
             Check(AppText.Get("Save") == "儲存" && AppText.Get("FloatingWindow") == "浮動視窗", "Hong Kong terminology");
         }
         finally { AppText.SetLanguage("zh-CN"); }
+    }
+
+    private static void TestHelpTranslations()
+    {
+        string[] keys = ["LanguageHint", "StartupHint", "StartupWindowHint", "RegisterCurrentPathHelp",
+            "NotificationsHelp", "RefreshIntervalHint", "DragHint", "HelpLabel"];
+        foreach (var language in new[] { "en", "zh-CN", "zh-HK" })
+        {
+            var strings = AppText.GetStrings(language);
+            foreach (var key in keys)
+            {
+                Check(strings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value),
+                    $"explicit help translation exists: {language}/{key}");
+            }
+            Check(strings["NotificationsHelp"].Contains('\n'), "notification help has short paragraphs");
+        }
     }
 
     private static void TestLanguageSettings()

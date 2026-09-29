@@ -22,7 +22,7 @@
     <value>介面語言</value>
   </data>
   <data xml:space="preserve" name="LanguageHint">
-    <value>儲存後生效。</value>
+    <value>儲存後立即切換介面語言。</value>
   </data>
   <data xml:space="preserve" name="Startup">
     <value>啟動</value>
@@ -34,10 +34,12 @@
     <value>啟動後最小化至通知區域</value>
   </data>
   <data xml:space="preserve" name="StartupHint">
-    <value>自動啟動時只顯示通知區域圖示；已啟用的浮動視窗仍會顯示。</value>
+    <value>登入 Windows 後自動執行 CodexMonitor，儲存後生效。</value>
   </data>
   <data xml:space="preserve" name="StartupWindowHint">
-    <value>取消此選項後，自動啟動會顯示主視窗。手動啟動一律顯示主視窗。</value>
+    <value>自動啟動時不顯示主視窗，只保留通知區域圖示；已啟用的浮動視窗仍會顯示。
+
+取消此選項後，自動啟動會顯示主視窗。手動啟動不受影響。</value>
   </data>
   <data xml:space="preserve" name="WindowsControlNotice">
     <value>是否啟動仍由 Windows 啟動應用程式設定控制；如已被系統停用，請自行在 Windows 設定中確認。</value>
@@ -70,7 +72,9 @@
     <value>{0} 分鐘</value>
   </data>
   <data xml:space="preserve" name="RefreshIntervalHint">
-    <value>儲存後會重新計算下次自動更新的時間。</value>
+    <value>每隔 1–60 分鐘自動取得額度，儲存後重新計算下次自動更新的時間。
+
+手動更新毋須等待此間隔；正在更新時暫不可用。</value>
   </data>
   <data xml:space="preserve" name="MainDisplay">
     <value>主視窗顯示內容</value>
@@ -103,10 +107,12 @@
     <value>鎖定浮動視窗</value>
   </data>
   <data xml:space="preserve" name="LockFloatingHint">
-    <value>鎖定浮動視窗（滑鼠點擊穿透並置頂）</value>
+    <value>鎖定浮動視窗</value>
   </data>
   <data xml:space="preserve" name="DragHint">
-    <value>解鎖後，按住浮動視窗的空白位置即可拖動。鎖定後可從通知區域選單解鎖。</value>
+    <value>解鎖後，按住浮動視窗的空白位置即可拖動。
+
+鎖定後置頂並允許滑鼠點擊穿透。可透過通知區域選單或設定重新解鎖。</value>
   </data>
   <data xml:space="preserve" name="FloatingDisplay">
     <value>浮動視窗顯示內容</value>
@@ -290,5 +296,16 @@
   </data>
   <data xml:space="preserve" name="AccountInvalid">
     <value>Codex 帳戶回應中的 account 不是物件</value>
+  </data>
+  <data xml:space="preserve" name="RegisterCurrentPathHelp">
+    <value>移動程式後，從新位置執行並勾選此項。儲存時會將啟動項目更新為目前程式路徑。</value>
+  </data>
+  <data xml:space="preserve" name="NotificationsHelp">
+    <value>關閉主視窗轉入通知區域時，提示程式仍在背景執行，每次執行最多提示一次。
+
+額度更新失敗時，提示簡短原因；詳細錯誤仍記錄於日誌。</value>
+  </data>
+  <data xml:space="preserve" name="HelpLabel">
+    <value>說明</value>
   </data>
 </root>

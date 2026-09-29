@@ -22,7 +22,7 @@
     <value>Language</value>
   </data>
   <data xml:space="preserve" name="LanguageHint">
-    <value>Applied when saved.</value>
+    <value>The interface language changes after you save.</value>
   </data>
   <data xml:space="preserve" name="Startup">
     <value>Startup</value>
@@ -34,10 +34,12 @@
     <value>Start in the system tray</value>
   </data>
   <data xml:space="preserve" name="StartupHint">
-    <value>On automatic startup, only the tray icon appears. The floating window is shown if enabled.</value>
+    <value>Start CodexMonitor when you sign in to Windows. The change takes effect after you save.</value>
   </data>
   <data xml:space="preserve" name="StartupWindowHint">
-    <value>Turn this off to show the main window on automatic startup. Manual launches always show the main window.</value>
+    <value>On automatic startup, hide the main window in the system tray. An enabled floating window still appears.
+
+Turn this off to show the main window. Manual launches are unaffected.</value>
   </data>
   <data xml:space="preserve" name="WindowsControlNotice">
     <value>Windows startup app settings still apply. If Windows has disabled startup, check your Windows settings.</value>
@@ -70,7 +72,9 @@
     <value>{0} min</value>
   </data>
   <data xml:space="preserve" name="RefreshIntervalHint">
-    <value>Saving restarts the automatic refresh interval.</value>
+    <value>Fetch quota data automatically every 1–60 minutes. Saving restarts the interval.
+
+Manual refresh does not have to wait for this interval; it is unavailable while a refresh is in progress.</value>
   </data>
   <data xml:space="preserve" name="MainDisplay">
     <value>Main window content</value>
@@ -103,10 +107,12 @@
     <value>Lock floating window</value>
   </data>
   <data xml:space="preserve" name="LockFloatingHint">
-    <value>Lock floating window (click-through, always on top)</value>
+    <value>Lock floating window</value>
   </data>
   <data xml:space="preserve" name="DragHint">
-    <value>Drag an empty area to move the unlocked window. Use the tray menu to unlock it.</value>
+    <value>When unlocked, drag an empty area to move the floating window.
+
+When locked, it stays on top and mouse clicks pass through. Unlock it from the tray menu or Settings.</value>
   </data>
   <data xml:space="preserve" name="FloatingDisplay">
     <value>Floating window content</value>
@@ -290,5 +296,16 @@ Details have been recorded in the log.</value>
   </data>
   <data xml:space="preserve" name="AccountInvalid">
     <value>The account field in the Codex response is not an object</value>
+  </data>
+  <data xml:space="preserve" name="RegisterCurrentPathHelp">
+    <value>After moving the program, run it from the new location and select this option. Saving updates the startup entry to the current path.</value>
+  </data>
+  <data xml:space="preserve" name="NotificationsHelp">
+    <value>When the main window closes to the system tray, show a background notice at most once per run.
+
+When a quota refresh fails, show a brief reason. Details remain in the log.</value>
+  </data>
+  <data xml:space="preserve" name="HelpLabel">
+    <value>Help</value>
   </data>
 </root>

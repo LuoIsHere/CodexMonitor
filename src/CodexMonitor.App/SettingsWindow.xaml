@@ -25,6 +25,72 @@
   </shell:WindowChrome.WindowChrome>
 
   <Window.Resources>
+    <Style x:Key="HelpFocusStyle" TargetType="Control">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate>
+            <Border BorderBrush="{StaticResource PrimaryTextBrush}" BorderThickness="1" CornerRadius="4" Margin="1" />
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="HelpToolTipStyle" TargetType="ToolTip">
+      <Setter Property="MaxWidth" Value="300" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="Background" Value="#F2181818" />
+      <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="ContentTemplate">
+        <Setter.Value>
+          <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="HelpIconStyle" TargetType="Button">
+      <Setter Property="Content" Value="ⓘ" />
+      <Setter Property="FontFamily" Value="Segoe UI" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Margin" Value="5,0,0,0" />
+      <Setter Property="Padding" Value="3" />
+      <Setter Property="MinWidth" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FocusVisualStyle" Value="{StaticResource HelpFocusStyle}" />
+      <Setter Property="AutomationProperties.HelpText" Value="{Binding Tag, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="AutomationProperties.ItemType" Value="{DynamicResource Text.HelpLabel}" />
+      <EventSetter Event="Click" Handler="OnHelpClick" />
+      <EventSetter Event="PreviewKeyDown" Handler="OnHelpPreviewKeyDown" />
+      <EventSetter Event="LostKeyboardFocus" Handler="OnHelpLostKeyboardFocus" />
+      <EventSetter Event="Unloaded" Handler="OnHelpUnloaded" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        </Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True">
+          <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        </Trigger>
+      </Style.Triggers>
+    </Style>
     <Style TargetType="CheckBox">
       <Setter Property="Margin" Value="0,7" />
       <Setter Property="FontSize" Value="13" />
@@ -134,47 +200,97 @@
           <ScrollViewer Margin="6,13,6,0"
                         VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,10,0">
-              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
-                         FontWeight="SemiBold" Text="{DynamicResource Text.Language}" />
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
+                           FontWeight="SemiBold" Text="{DynamicResource Text.Language}" />
+                <Button x:Name="LanguageHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.Language}"
+                        Tag="{DynamicResource Text.LanguageHint}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </StackPanel>
               <ComboBox Margin="0,8,0,4" Padding="6,3" HorizontalAlignment="Left" MinWidth="200"
                         ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="Code"
                         SelectedValue="{Binding Language}" />
-              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
-                         Text="{DynamicResource Text.LanguageHint}" />
               <Border Height="1" Margin="0,14,0,14" Background="{StaticResource DividerBrush}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11" FontWeight="SemiBold" Text="{DynamicResource Text.Startup}" />
-              <CheckBox Content="{DynamicResource Text.StartupEnabled}" IsChecked="{Binding StartupEnabled}" />
-              <CheckBox Content="{DynamicResource Text.MinimizeToTray}"
-                        Margin="16,4,0,4"
-                        IsEnabled="{Binding StartupEnabled}"
-                        IsChecked="{Binding MinimizeToTray}" />
-              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
-                         Text="{DynamicResource Text.StartupHint}"
-                         TextWrapping="Wrap" />
-              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
-                         Text="{DynamicResource Text.StartupWindowHint}"
-                         TextWrapping="Wrap" />
+              <Grid HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="{DynamicResource Text.StartupEnabled}" IsChecked="{Binding StartupEnabled}" />
+                <Button Grid.Column="1" x:Name="StartupHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.StartupEnabled}"
+                        Tag="{DynamicResource Text.StartupHint}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </Grid>
+              <Grid HorizontalAlignment="Left" Margin="16,0,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="{DynamicResource Text.MinimizeToTray}"
+                          Margin="0,4,0,4"
+                          IsEnabled="{Binding StartupEnabled}"
+                          IsChecked="{Binding MinimizeToTray}" />
+                <Button Grid.Column="1" x:Name="MinimizeHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.MinimizeToTray}"
+                        Tag="{DynamicResource Text.StartupWindowHint}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </Grid>
               <TextBlock Margin="0,6,0,0" FontSize="10" Text="{Binding StartupStatus}" TextWrapping="Wrap" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="10"
                          Text="{Binding WindowsControlNotice}" TextWrapping="Wrap" />
-              <CheckBox Content="{DynamicResource Text.RegisterCurrentPath}" FontSize="11"
-                        IsEnabled="{Binding StartupEnabled}" IsChecked="{Binding RegisterCurrentPath}" />
+              <Grid HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="{DynamicResource Text.RegisterCurrentPath}" FontSize="11"
+                          IsEnabled="{Binding StartupEnabled}" IsChecked="{Binding RegisterCurrentPath}" />
+                <Button Grid.Column="1" x:Name="RegisterHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.RegisterCurrentPath}"
+                        Tag="{DynamicResource Text.RegisterCurrentPathHelp}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </Grid>
               <Border Height="1" Margin="0,8,0,14" Background="{StaticResource DividerBrush}" />
               <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
                          FontSize="11"
                          FontWeight="SemiBold"
                          Text="{DynamicResource Text.Notifications}" />
-              <CheckBox Content="{DynamicResource Text.NotificationsEnabled}"
-                        IsChecked="{Binding NotificationsEnabled}" />
-              <TextBlock Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
-                         TextWrapping="Wrap">
-                <Run xml:space="preserve" Text="1. " /><Run xml:space="preserve" FontWeight="SemiBold" Text="{DynamicResource Text.BackgroundNoticeLabel}" /><Run xml:space="preserve" Text="{DynamicResource Text.BackgroundNoticeHint}" />
-              </TextBlock>
-              <TextBlock Margin="0,5,0,0" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11"
-                         TextWrapping="Wrap">
-                <Run xml:space="preserve" Text="2. " /><Run xml:space="preserve" FontWeight="SemiBold" Text="{DynamicResource Text.FailureNoticeLabel}" /><Run xml:space="preserve" Text="{DynamicResource Text.FailureNoticeHint}" />
-              </TextBlock>
+              <Grid HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="{DynamicResource Text.NotificationsEnabled}"
+                          IsChecked="{Binding NotificationsEnabled}" />
+                <Button Grid.Column="1" x:Name="NotificationsHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.NotificationsEnabled}"
+                        Tag="{DynamicResource Text.NotificationsHelp}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </Grid>
 
               <Border Height="1"
                       Margin="0,8,0,14"
@@ -185,10 +301,20 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
-                           FontSize="11"
-                           FontWeight="SemiBold"
-                           Text="{DynamicResource Text.RefreshInterval}" />
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock VerticalAlignment="Center" Foreground="{StaticResource SecondaryTextBrush}"
+                             FontSize="11"
+                             FontWeight="SemiBold"
+                             Text="{DynamicResource Text.RefreshInterval}" />
+                  <Button x:Name="RefreshIntervalHelp" Style="{StaticResource HelpIconStyle}"
+                          AutomationProperties.Name="{DynamicResource Text.RefreshInterval}"
+                          Tag="{DynamicResource Text.RefreshIntervalHint}">
+                    <Button.ToolTip>
+                      <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                               Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                    </Button.ToolTip>
+                  </Button>
+                </StackPanel>
                 <TextBlock Grid.Column="1"
                            FontSize="12"
                            FontWeight="SemiBold"
@@ -200,10 +326,6 @@
                       TickFrequency="1"
                       IsSnapToTickEnabled="True"
                       Value="{Binding RefreshIntervalMinutes}" />
-              <TextBlock Margin="0,4,0,0"
-                         Foreground="{StaticResource SecondaryTextBrush}"
-                         FontSize="10"
-                         Text="{DynamicResource Text.RefreshIntervalHint}" />
 
               <Border Height="1"
                       Margin="0,15,0,14"
@@ -235,13 +357,22 @@
                          Text="{DynamicResource Text.State}" />
               <CheckBox Content="{DynamicResource Text.EnableFloating}"
                         IsChecked="{Binding FloatingWindowEnabled}" />
-              <CheckBox Content="{DynamicResource Text.LockFloatingHint}"
-                        IsChecked="{Binding FloatingWindowLocked}" />
-              <TextBlock Margin="0,2,0,0"
-                         Foreground="{StaticResource SecondaryTextBrush}"
-                         FontSize="10"
-                         Text="{DynamicResource Text.DragHint}"
-                         TextWrapping="Wrap" />
+              <Grid HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Content="{DynamicResource Text.LockFloatingHint}"
+                          IsChecked="{Binding FloatingWindowLocked}" />
+                <Button Grid.Column="1" x:Name="FloatingLockHelp" Style="{StaticResource HelpIconStyle}"
+                        AutomationProperties.Name="{DynamicResource Text.LockFloatingHint}"
+                        Tag="{DynamicResource Text.DragHint}">
+                  <Button.ToolTip>
+                    <ToolTip Style="{StaticResource HelpToolTipStyle}"
+                             Content="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                  </Button.ToolTip>
+                </Button>
+              </Grid>
 
               <Border Height="1"
                       Margin="0,15,0,14"

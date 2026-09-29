@@ -1,4 +1,9 @@
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using Button = System.Windows.Controls.Button;
+using ToolTip = System.Windows.Controls.ToolTip;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using LuoIsHere.CodexMonitor.App.ViewModels;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 using LuoIsHere.CodexMonitor.Infrastructure.Startup;
@@ -12,6 +17,7 @@ public partial class SettingsWindow : Window
     private readonly StartupSettingsSession _session;
     private bool _saving;
     private TaskCompletionSource? _saveFinished;
+    private ToolTip? _openHelp;
 
     public SettingsWindow(AppSettings settings, UserStartupService startup, Func<AppSettings, Task> saveSettings)
     {
@@ -22,6 +28,8 @@ public partial class SettingsWindow : Window
         _viewModel.StartupStatus = startup.ReadStatus();
         DataContext = _viewModel;
         Closing += (_, e) => e.Cancel = _saving;
+        Deactivated += (_, _) => CloseHelp();
+        Closed += (_, _) => CloseHelp();
     }
 
     public Task WaitForSaveAsync() => _saveFinished?.Task ?? Task.CompletedTask;
@@ -64,6 +72,54 @@ public partial class SettingsWindow : Window
 
     private void OnCloseClick(object sender, RoutedEventArgs e)
         => Close();
+
+    private void OnHelpClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { ToolTip: ToolTip tip } button)
+        {
+            var wasOpen = tip.IsOpen;
+            CloseHelp();
+            if (!wasOpen)
+            {
+                tip.PlacementTarget = button;
+                tip.Placement = PlacementMode.Bottom;
+                _openHelp = tip;
+                tip.IsOpen = true;
+            }
+            else
+            {
+                tip.IsOpen = false;
+            }
+        }
+        e.Handled = true;
+    }
+
+    private void OnHelpPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            if (!e.IsRepeat) OnHelpClick(sender, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && sender is Button { ToolTip: ToolTip { IsOpen: true } tip })
+        {
+            tip.IsOpen = false;
+            CloseHelp();
+            e.Handled = true;
+        }
+    }
+
+    private void OnHelpLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        => CloseHelp();
+
+    private void OnHelpUnloaded(object sender, RoutedEventArgs e)
+        => CloseHelp();
+
+    private void CloseHelp()
+    {
+        if (_openHelp is not null) _openHelp.IsOpen = false;
+        _openHelp = null;
+    }
 
     private void OnWindowKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {

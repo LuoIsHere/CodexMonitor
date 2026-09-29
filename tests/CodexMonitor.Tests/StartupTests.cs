@@ -477,9 +477,20 @@ internal static class StartupTests
             foreach (var language in new[] { "en", "zh-HK", "zh-CN" })
             {
                 ApplicationLocalizer.Apply(language);
-                var window = new SettingsWindow(new AppSettings { Language = language }, Service(registry), _ => Task.CompletedTask);
+                var saves = 0;
+                var window = new SettingsWindow(new AppSettings { Language = language }, Service(registry), _ =>
+                {
+                    saves++;
+                    return Task.CompletedTask;
+                });
                 try
                 {
+                    // ToolTip requires a live presentation source. Keep the test window off screen and inactive.
+                    window.WindowStartupLocation = WindowStartupLocation.Manual;
+                    window.Left = -32000;
+                    window.Top = -32000;
+                    window.ShowActivated = false;
+                    window.Show();
                     var viewModel = (SettingsWindowViewModel)window.DataContext;
                     Check(!viewModel.StartupEnabled && viewModel.MinimizeToTray, "settings window initial startup values");
                     Check(window.Title == AppText.Get("SettingsTitle"), "localized settings title");
@@ -489,11 +500,13 @@ internal static class StartupTests
                     content.Arrange(new Rect(0, 0, window.Width, window.Height));
                     content.UpdateLayout();
                     var tabs = Descendants<TabControl>(content).Single();
+                    await TestSettingsHelpAsync(window, output, language);
+                    Check(saves == 0, "help interactions never save settings");
                     if (output is not null)
                     {
                         RenderWindowContent(window, Path.Combine(output, $"settings-{language}.png"));
-                        var scroll = Descendants<ScrollViewer>(content).First(s => s.ScrollableHeight > 0);
-                        scroll.ScrollToEnd();
+                        var scroll = Descendants<ScrollViewer>(content).FirstOrDefault(s => s.ScrollableHeight > 0);
+                        scroll?.ScrollToEnd();
                         await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
                         RenderWindowContent(window, Path.Combine(output, $"settings-lower-{language}.png"));
                     }
@@ -509,6 +522,156 @@ internal static class StartupTests
             Check(registry.Writes == 0 && registry.Deletes == 0, "opening localized settings never writes startup entry");
         }
         finally { ApplicationLocalizer.Apply("zh-CN"); }
+    }
+
+    private static async Task TestSettingsHelpAsync(SettingsWindow window, string? output, string language)
+    {
+        var content = (FrameworkElement)window.Content;
+        var tabs = Descendants<TabControl>(content).Single();
+        var viewModel = (SettingsWindowViewModel)window.DataContext;
+        var original = viewModel.CreateSettings();
+        (string Name, string Key, string Label)[] help =
+        [
+            ("LanguageHelp", "LanguageHint", "Language"),
+            ("StartupHelp", "StartupHint", "StartupEnabled"),
+            ("MinimizeHelp", "StartupWindowHint", "MinimizeToTray"),
+            ("RegisterHelp", "RegisterCurrentPathHelp", "RegisterCurrentPath"),
+            ("NotificationsHelp", "NotificationsHelp", "NotificationsEnabled"),
+            ("RefreshIntervalHelp", "RefreshIntervalHint", "RefreshInterval"),
+            ("FloatingLockHelp", "DragHint", "LockFloatingHint"),
+        ];
+        using var source = new System.Windows.Interop.HwndSource(
+            new System.Windows.Interop.HwndSourceParameters("Settings help keyboard test")
+            { Width = 1, Height = 1, WindowStyle = 0 });
+        foreach (var (name, key, label) in help)
+        {
+            tabs.SelectedIndex = name == "FloatingLockHelp" ? 1 : 0;
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            content.UpdateLayout();
+            var button = (Button)window.FindName(name);
+            Check((string)button.Content == "ⓘ" && button.Focusable && button.IsEnabled,
+                $"{name} is a focusable help icon even when its option is disabled");
+            Check(button.ActualWidth >= 24 && button.ActualHeight >= 24 && button.FocusVisualStyle is not null,
+                $"{name} has a usable hit area and focus indicator");
+            Check(ReferenceEquals(button.Style, window.Resources["HelpIconStyle"]), "help icons share one style");
+            Check(System.Windows.Automation.AutomationProperties.GetName(button) == AppText.Get(label) &&
+                System.Windows.Automation.AutomationProperties.GetHelpText(button) == AppText.Get(key),
+                $"{name} exposes localized accessible text");
+            var parent = button.Parent as Grid;
+            if (parent is not null)
+            {
+                var option = parent.Children.OfType<CheckBox>().Single();
+                var optionRight = option.TranslatePoint(new Point(option.ActualWidth, 0), parent).X;
+                Check(button.TranslatePoint(new Point(), parent).X >= optionRight,
+                    $"{name} does not overlap its setting label");
+            }
+            var tip = (ToolTip)button.ToolTip;
+            tip.Opacity = 0; // Popups must not flash on the user's desktop during automated checks.
+            Check(tip.MaxWidth == 300, "help tooltip width is bounded");
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            Check(tip.IsOpen && (string)tip.Content == AppText.Get(key),
+                $"{name} opens its localized explanation: open={tip.IsOpen}, content={tip.Content}, tag={button.Tag}");
+            Check(Descendants<TextBlock>(tip).Any(text => text.TextWrapping == TextWrapping.Wrap),
+                "tooltip content wraps");
+            Check(tip.ActualWidth > 0 && tip.ActualWidth <= 300 && tip.ActualHeight > 0,
+                "tooltip lays out within the maximum width");
+            if (output is not null)
+            {
+                tip.UpdateLayout();
+                RenderHelpToolTip(tip, Path.Combine(output, $"help-{name}-{language}.png"));
+            }
+            ApplicationLocalizer.Apply(language == "en" ? "zh-CN" : "en");
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            Check((string)tip.Content == AppText.Get(key) &&
+                System.Windows.Automation.AutomationProperties.GetHelpText(button) == AppText.Get(key),
+                "open tooltip and accessibility text follow application language");
+            ApplicationLocalizer.Apply(language);
+            foreach (var keyPress in new[] { System.Windows.Input.Key.Escape, System.Windows.Input.Key.Enter,
+                         System.Windows.Input.Key.Space })
+            {
+                var keyEvent = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,
+                    source, Environment.TickCount, keyPress)
+                { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
+                button.RaiseEvent(keyEvent);
+                Check(keyEvent.Handled, "help keys are consumed before save or cancel");
+                Check(tip.IsOpen == (keyPress == System.Windows.Input.Key.Enter),
+                    "Escape closes help, Enter opens help, Space toggles help closed");
+            }
+        }
+        Check(viewModel.CreateSettings() == original && !viewModel.RegisterCurrentPath,
+            "help interactions leave every setting unchanged");
+        foreach (var tabIndex in new[] { 0, 1 })
+        {
+            tabs.SelectedIndex = tabIndex;
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            var options = Descendants<CheckBox>(content).ToArray();
+            Check(options.Length == (tabIndex == 0 ? 8 : 7), "all original settings checkboxes remain");
+            foreach (var option in options)
+            {
+                var expression = System.Windows.Data.BindingOperations.GetBindingExpression(option,
+                    System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty);
+                Check(expression is not null, "every setting checkbox retains its binding");
+                var property = typeof(SettingsWindowViewModel).GetProperty(expression!.ParentBinding.Path.Path)!;
+                var initial = (bool)property.GetValue(viewModel)!;
+                option.SetCurrentValue(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, !initial);
+                Check((bool)property.GetValue(viewModel)! == !initial, "checkbox edits still reach the settings draft");
+                property.SetValue(viewModel, initial);
+                Check(option.IsChecked == initial, "settings draft still updates its checkbox");
+            }
+        }
+        tabs.SelectedIndex = 0;
+        await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+        var checkboxes = Descendants<CheckBox>(content).ToArray();
+        var languagePicker = Descendants<ComboBox>(content).Single();
+        languagePicker.SetCurrentValue(System.Windows.Controls.Primitives.Selector.SelectedValueProperty,
+            language == "en" ? "zh-CN" : "en");
+        Check(viewModel.Language == (string)languagePicker.SelectedValue && AppText.Language == language,
+            "language selection updates only the draft until saved");
+        viewModel.Language = language;
+        var startup = checkboxes.Single(box => System.Windows.Data.BindingOperations.GetBindingExpression(
+            box, System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty)?.ParentBinding.Path.Path == "StartupEnabled");
+        startup.IsChecked = true;
+        Check(viewModel.StartupEnabled, "startup checkbox still updates its view model");
+        viewModel.StartupEnabled = false;
+        var status = Descendants<TextBlock>(content).Single(text => System.Windows.Data.BindingOperations.GetBindingExpression(
+            text, TextBlock.TextProperty)?.ParentBinding.Path.Path == "StartupStatus");
+        var notice = Descendants<TextBlock>(content).Single(text => System.Windows.Data.BindingOperations.GetBindingExpression(
+            text, TextBlock.TextProperty)?.ParentBinding.Path.Path == "WindowsControlNotice");
+        var error = Descendants<TextBlock>(content).Single(text => System.Windows.Data.BindingOperations.GetBindingExpression(
+            text, TextBlock.TextProperty)?.ParentBinding.Path.Path == "SaveError");
+        Check(status.Visibility == Visibility.Visible && notice.Visibility == Visibility.Visible &&
+            notice.Text == AppText.Get("WindowsControlNotice"), "startup status and Windows restriction remain inline");
+        var previousStatus = viewModel.StartupStatus;
+        viewModel.StartupStatus = AppText.Get("StartupMismatch");
+        Check(status.Text == viewModel.StartupStatus, "startup status still updates inline");
+        Check(error.Visibility == Visibility.Collapsed, "empty save error is collapsed");
+        viewModel.SaveError = AppText.Get("SettingsSaveFailed");
+        content.UpdateLayout();
+        Check(error.Visibility == Visibility.Visible && error.Text == viewModel.SaveError,
+            "save errors remain visible in the footer");
+        viewModel.SaveError = "";
+        Check(error.Visibility == Visibility.Collapsed, "cleared save error collapses again");
+        viewModel.StartupStatus = previousStatus;
+        var slider = Descendants<Slider>(content).Single();
+        slider.Value = 17;
+        Check(viewModel.RefreshIntervalMinutes == 17 && slider.Minimum == 1 && slider.Maximum == 60,
+            "refresh interval binding and limits are unchanged");
+        viewModel.RefreshIntervalMinutes = original.RefreshIntervalMinutes;
+        Check(viewModel.CreateSettings() == original, "binding checks restore the original settings draft");
+    }
+
+    private static void RenderHelpToolTip(ToolTip tip, string path)
+    {
+        tip.Opacity = 1;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(tip.ActualWidth),
+            (int)Math.Ceiling(tip.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(tip);
+        tip.Opacity = 0;
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream = File.Create(path);
+        encoder.Save(stream);
     }
 
     private static async Task RenderMonitorWindowsAsync(string language, string output)

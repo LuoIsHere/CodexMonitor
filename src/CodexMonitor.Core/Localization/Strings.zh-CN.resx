@@ -22,7 +22,7 @@
     <value>界面语言</value>
   </data>
   <data xml:space="preserve" name="LanguageHint">
-    <value>保存后生效。</value>
+    <value>保存后立即切换界面语言。</value>
   </data>
   <data xml:space="preserve" name="Startup">
     <value>启动</value>
@@ -34,10 +34,12 @@
     <value>启动后最小化到托盘</value>
   </data>
   <data xml:space="preserve" name="StartupHint">
-    <value>自动启动时仅显示托盘图标；已开启的悬浮窗仍会显示。</value>
+    <value>登录 Windows 后自动运行 CodexMonitor，保存后生效。</value>
   </data>
   <data xml:space="preserve" name="StartupWindowHint">
-    <value>取消最小化选项后，自动启动会显示主窗口。普通手动启动始终显示主窗口。</value>
+    <value>自动启动时不显示主窗口，仅保留托盘图标；已启用的悬浮窗仍会显示。
+
+取消此选项后，自动启动会显示主窗口。普通手动启动不受影响。</value>
   </data>
   <data xml:space="preserve" name="WindowsControlNotice">
     <value>仍受 Windows 启动应用设置控制；如已被系统禁用，请自行在 Windows 设置中确认。</value>
@@ -70,7 +72,9 @@
     <value>{0} 分钟</value>
   </data>
   <data xml:space="preserve" name="RefreshIntervalHint">
-    <value>保存后从当前时刻重新计算下一次自动刷新。</value>
+    <value>每隔 1–60 分钟自动获取额度，保存后重新计算下一次自动刷新时间。
+
+手动刷新无需等待此间隔；正在刷新时暂不可用。</value>
   </data>
   <data xml:space="preserve" name="MainDisplay">
     <value>主窗口显示内容</value>
@@ -103,10 +107,12 @@
     <value>锁定悬浮窗</value>
   </data>
   <data xml:space="preserve" name="LockFloatingHint">
-    <value>锁定悬浮窗（鼠标点击穿透并保持置顶）</value>
+    <value>锁定悬浮窗</value>
   </data>
   <data xml:space="preserve" name="DragHint">
-    <value>解锁时按住悬浮窗空白区域即可拖动。锁定后可从托盘菜单解锁。</value>
+    <value>解锁时，按住悬浮窗空白区域即可拖动。
+
+锁定后置顶并允许鼠标点击穿透。可通过托盘菜单或设置重新解锁。</value>
   </data>
   <data xml:space="preserve" name="FloatingDisplay">
     <value>悬浮窗显示内容</value>
@@ -290,5 +296,16 @@
   </data>
   <data xml:space="preserve" name="AccountInvalid">
     <value>Codex 账号响应中的 account 不是对象</value>
+  </data>
+  <data xml:space="preserve" name="RegisterCurrentPathHelp">
+    <value>移动程序后，从新位置运行并勾选此项。保存时会将启动项更新为当前程序路径。</value>
+  </data>
+  <data xml:space="preserve" name="NotificationsHelp">
+    <value>关闭主窗口转入托盘时，提示程序仍在后台运行，每次运行最多提示一次。
+
+额度刷新失败时，提示简短原因；详细错误仍记录在日志中。</value>
+  </data>
+  <data xml:space="preserve" name="HelpLabel">
+    <value>帮助</value>
   </data>
 </root>
