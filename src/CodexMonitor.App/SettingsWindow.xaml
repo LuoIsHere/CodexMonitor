@@ -35,6 +35,7 @@
       </Setter>
     </Style>
     <Style x:Key="HelpToolTipStyle" TargetType="ToolTip">
+      <Setter Property="IsHitTestVisible" Value="False" />
       <Setter Property="MaxWidth" Value="300" />
       <Setter Property="Padding" Value="10,8" />
       <Setter Property="FontSize" Value="12" />
@@ -68,7 +69,10 @@
       <Setter Property="FocusVisualStyle" Value="{StaticResource HelpFocusStyle}" />
       <Setter Property="AutomationProperties.HelpText" Value="{Binding Tag, RelativeSource={RelativeSource Self}}" />
       <Setter Property="AutomationProperties.ItemType" Value="{DynamicResource Text.HelpLabel}" />
-      <EventSetter Event="Click" Handler="OnHelpClick" />
+      <!-- Hover and keyboard handlers own the lifetime; do not let ToolTipService race them. -->
+      <Setter Property="ToolTipService.IsEnabled" Value="False" />
+      <EventSetter Event="MouseEnter" Handler="OnHelpMouseEnter" />
+      <EventSetter Event="MouseLeave" Handler="OnHelpMouseLeave" />
       <EventSetter Event="PreviewKeyDown" Handler="OnHelpPreviewKeyDown" />
       <EventSetter Event="LostKeyboardFocus" Handler="OnHelpLostKeyboardFocus" />
       <EventSetter Event="Unloaded" Handler="OnHelpUnloaded" />

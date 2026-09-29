@@ -568,10 +568,16 @@ internal static class StartupTests
             var tip = (ToolTip)button.ToolTip;
             tip.Opacity = 0; // Popups must not flash on the user's desktop during automated checks.
             Check(tip.MaxWidth == 300, "help tooltip width is bounded");
+            Check(!ToolTipService.GetIsEnabled(button) && !tip.IsHitTestVisible,
+                "help owns its hover lifetime and the popup does not intercept the mouse");
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(!tip.IsOpen, "click alone does not latch a help popup open");
+            RaiseHelpMouseEvent(button, System.Windows.Input.Mouse.MouseEnterEvent);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
             Check(tip.IsOpen && (string)tip.Content == AppText.Get(key),
-                $"{name} opens its localized explanation: open={tip.IsOpen}, content={tip.Content}, tag={button.Tag}");
+                $"{name} opens on mouse enter: open={tip.IsOpen}, content={tip.Content}, tag={button.Tag}");
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(tip.IsOpen, "clicking while hovering does not toggle help closed");
             Check(Descendants<TextBlock>(tip).Any(text => text.TextWrapping == TextWrapping.Wrap),
                 "tooltip content wraps");
             Check(tip.ActualWidth > 0 && tip.ActualWidth <= 300 && tip.ActualHeight > 0,
@@ -587,6 +593,10 @@ internal static class StartupTests
                 System.Windows.Automation.AutomationProperties.GetHelpText(button) == AppText.Get(key),
                 "open tooltip and accessibility text follow application language");
             ApplicationLocalizer.Apply(language);
+            RaiseHelpMouseEvent(button, System.Windows.Input.Mouse.MouseLeaveEvent);
+            Check(!tip.IsOpen, "mouse leave immediately closes help after a click");
+            RaiseHelpMouseEvent(button, System.Windows.Input.Mouse.MouseEnterEvent);
+            Check(tip.IsOpen, "repeated hover opens help without another click");
             foreach (var keyPress in new[] { System.Windows.Input.Key.Escape, System.Windows.Input.Key.Enter,
                          System.Windows.Input.Key.Space })
             {
@@ -595,10 +605,25 @@ internal static class StartupTests
                 { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
                 button.RaiseEvent(keyEvent);
                 Check(keyEvent.Handled, "help keys are consumed before save or cancel");
-                Check(tip.IsOpen == (keyPress == System.Windows.Input.Key.Enter),
-                    "Escape closes help, Enter opens help, Space toggles help closed");
+                Check(tip.IsOpen == (keyPress != System.Windows.Input.Key.Escape),
+                    "Escape closes help; Enter and Space open without toggling");
             }
+            RaiseHelpMouseEvent(button, System.Windows.Input.Mouse.MouseLeaveEvent);
+            Check(!tip.IsOpen, "mouse leave also closes keyboard-opened help");
         }
+        tabs.SelectedIndex = 0;
+        await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+        var firstHelp = (Button)window.FindName("LanguageHelp");
+        var secondHelp = (Button)window.FindName("StartupHelp");
+        RaiseHelpMouseEvent(firstHelp, System.Windows.Input.Mouse.MouseEnterEvent);
+        RaiseHelpMouseEvent(secondHelp, System.Windows.Input.Mouse.MouseEnterEvent);
+        Check(!((ToolTip)firstHelp.ToolTip).IsOpen && ((ToolTip)secondHelp.ToolTip).IsOpen,
+            "moving to another icon leaves only its help open");
+        RaiseHelpMouseEvent(firstHelp, System.Windows.Input.Mouse.MouseLeaveEvent);
+        Check(((ToolTip)secondHelp.ToolTip).IsOpen, "late leave of a previous icon cannot close the current help");
+        tabs.SelectedIndex = 1;
+        await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+        Check(!((ToolTip)secondHelp.ToolTip).IsOpen, "switching tabs closes help from the unloaded tab");
         Check(viewModel.CreateSettings() == original && !viewModel.RegisterCurrentPath,
             "help interactions leave every setting unchanged");
         foreach (var tabIndex in new[] { 0, 1 })
@@ -660,6 +685,10 @@ internal static class StartupTests
         viewModel.RefreshIntervalMinutes = original.RefreshIntervalMinutes;
         Check(viewModel.CreateSettings() == original, "binding checks restore the original settings draft");
     }
+
+    private static void RaiseHelpMouseEvent(Button button, RoutedEvent routedEvent)
+        => button.RaiseEvent(new System.Windows.Input.MouseEventArgs(
+            System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = routedEvent });
 
     private static void RenderHelpToolTip(ToolTip tip, string path)
     {

@@ -73,32 +73,30 @@ public partial class SettingsWindow : Window
     private void OnCloseClick(object sender, RoutedEventArgs e)
         => Close();
 
-    private void OnHelpClick(object sender, RoutedEventArgs e)
+    private void OnHelpMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        => OpenHelp(sender);
+
+    private void OnHelpMouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        => CloseHelp(sender);
+
+    private void OpenHelp(object sender)
     {
         if (sender is Button { ToolTip: ToolTip tip } button)
         {
-            var wasOpen = tip.IsOpen;
+            if (ReferenceEquals(_openHelp, tip) && tip.IsOpen) return;
             CloseHelp();
-            if (!wasOpen)
-            {
-                tip.PlacementTarget = button;
-                tip.Placement = PlacementMode.Bottom;
-                _openHelp = tip;
-                tip.IsOpen = true;
-            }
-            else
-            {
-                tip.IsOpen = false;
-            }
+            tip.PlacementTarget = button;
+            tip.Placement = PlacementMode.Bottom;
+            _openHelp = tip;
+            tip.IsOpen = true;
         }
-        e.Handled = true;
     }
 
     private void OnHelpPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key is Key.Enter or Key.Space)
         {
-            if (!e.IsRepeat) OnHelpClick(sender, e);
+            if (!e.IsRepeat) OpenHelp(sender);
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && sender is Button { ToolTip: ToolTip { IsOpen: true } tip })
@@ -110,10 +108,15 @@ public partial class SettingsWindow : Window
     }
 
     private void OnHelpLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        => CloseHelp();
+        => CloseHelp(sender);
 
     private void OnHelpUnloaded(object sender, RoutedEventArgs e)
-        => CloseHelp();
+        => CloseHelp(sender);
+
+    private void CloseHelp(object sender)
+    {
+        if (sender is Button button && ReferenceEquals(button.ToolTip, _openHelp)) CloseHelp();
+    }
 
     private void CloseHelp()
     {
