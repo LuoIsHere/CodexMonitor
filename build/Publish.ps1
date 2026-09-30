@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.3.3.1",
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
+    [string]$Version = "0.3.3",
     [string]$Runtime = "win-x64",
     [string]$PackageSource = "https://api.nuget.org/v3/index.json"
 )
@@ -8,10 +9,17 @@ param(
 $ErrorActionPreference = "Stop"
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $artifactRoot = Join-Path $repositoryRoot "artifacts"
-$releaseRoot = Join-Path $repositoryRoot "Release"
 $workingRoot = Join-Path $artifactRoot (".publish-" + [guid]::NewGuid().ToString("N"))
 $sourceRoot = Join-Path $workingRoot "source"
 $project = Join-Path $sourceRoot "src\CodexMonitor.App\CodexMonitor.App.csproj"
+$fileVersion = ([version]"$Version.0").ToString(4)
+$versionProperties = @(
+    "-p:Version=$Version",
+    "-p:AssemblyVersion=$fileVersion",
+    "-p:FileVersion=$fileVersion",
+    "-p:InformationalVersion=$Version",
+    "-p:IncludeSourceRevisionInInformationalVersion=false"
+)
 
 function Assert-ChildPath([string]$Parent, [string]$Child) {
     $parentPath = [IO.Path]::GetFullPath($Parent).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
@@ -21,17 +29,19 @@ function Assert-ChildPath([string]$Parent, [string]$Child) {
     }
 }
 
-function Assert-SingleExecutable([string]$Directory, [string]$ExpectedVersion) {
+function Assert-PublishedExecutable([string]$Directory, [string]$ExpectedVersion, [switch]$SingleFile) {
     $files = @(Get-ChildItem -LiteralPath $Directory -Force)
-    if ($files.Count -ne 1 -or $files[0].Name -ne "CodexMonitor.exe") {
+    if ($SingleFile -and ($files.Count -ne 1 -or $files[0].Name -ne "CodexMonitor.exe")) {
         throw "Single-file publish produced extra files in $Directory."
     }
 
-    $fileVersion = $files[0].VersionInfo.FileVersion
-    if ($fileVersion -ne $ExpectedVersion) {
-        throw "Unexpected executable version in $Directory`: $fileVersion"
+    $executable = Get-Item -LiteralPath (Join-Path $Directory "CodexMonitor.exe")
+    $expectedFileVersion = ([version]"$ExpectedVersion.0").ToString(4)
+    if ($executable.VersionInfo.FileVersion -ne $expectedFileVersion -or
+        $executable.VersionInfo.ProductVersion -ne $ExpectedVersion) {
+        throw "Unexpected executable version in $Directory`: $($executable.VersionInfo.FileVersion) / $($executable.VersionInfo.ProductVersion)"
     }
-    return $files[0].FullName
+    return $executable.FullName
 }
 
 $dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
@@ -61,6 +71,7 @@ try {
     $env:NUGET_HTTP_CACHE_PATH = Join-Path $workingRoot ".nuget\http"
     $selfContainedDirectory = Join-Path $workingRoot "self-contained"
     $frameworkDirectory = Join-Path $workingRoot "framework-dependent"
+    $frameworkSingleFileDirectory = Join-Path $workingRoot "framework-dependent-single-file"
 
     & $dotnet restore $project `
         -r $Runtime `
@@ -77,14 +88,14 @@ try {
         --self-contained true `
         --no-restore `
         -o $selfContainedDirectory `
-        -p:Version=$Version `
+        @versionProperties `
         -p:PublishSingleFile=true `
         -p:IncludeAllContentForSelfExtract=true `
         -p:PublishTrimmed=false `
         -p:DebugType=None `
         -p:DebugSymbols=false
     if ($LASTEXITCODE -ne 0) { throw "Self-contained publish failed." }
-    $selfContainedExe = Assert-SingleExecutable $selfContainedDirectory $Version
+    $selfContainedExe = Assert-PublishedExecutable $selfContainedDirectory $Version -SingleFile
 
     & $dotnet restore $project `
         -r $Runtime `
@@ -101,58 +112,57 @@ try {
         --self-contained false `
         --no-restore `
         -o $frameworkDirectory `
-        -p:Version=$Version `
+        @versionProperties `
+        -p:PublishSingleFile=false `
+        -p:PublishTrimmed=false `
+        -p:DebugType=None `
+        -p:DebugSymbols=false
+    if ($LASTEXITCODE -ne 0) { throw "Framework-dependent publish failed." }
+    $null = Assert-PublishedExecutable $frameworkDirectory $Version
+
+    & $dotnet publish $project `
+        -c Release `
+        -r $Runtime `
+        --self-contained false `
+        --no-restore `
+        -o $frameworkSingleFileDirectory `
+        @versionProperties `
         -p:PublishSingleFile=true `
         -p:IncludeAllContentForSelfExtract=true `
         -p:PublishTrimmed=false `
         -p:DebugType=None `
         -p:DebugSymbols=false
-    if ($LASTEXITCODE -ne 0) { throw "Framework-dependent publish failed." }
-    $frameworkExe = Assert-SingleExecutable $frameworkDirectory $Version
+    if ($LASTEXITCODE -ne 0) { throw "Framework-dependent single-file publish failed." }
+    $frameworkExe = Assert-PublishedExecutable $frameworkSingleFileDirectory $Version -SingleFile
 
-    if (Test-Path -LiteralPath $releaseRoot) {
-        $releaseItem = Get-Item -LiteralPath $releaseRoot -Force
-        if ($releaseItem.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-            throw "Release is a link; refusing to clear it."
+    $publicFiles = @("README.md", "README_cn.md", "README_hk.md", "CHANGELOG.md", "LICENSE") |
+        ForEach-Object { Join-Path $repositoryRoot $_ }
+    foreach ($directory in @($selfContainedDirectory, $frameworkDirectory)) {
+        Copy-Item -LiteralPath $publicFiles -Destination $directory
+        $packageAssets = Join-Path $directory "assets"
+        New-Item -ItemType Directory -Path $packageAssets | Out-Null
+        Copy-Item -LiteralPath (Join-Path $repositoryRoot "assets\screenshots") -Destination $packageAssets -Recurse
+        $packageSource = Join-Path $directory "src"
+        New-Item -ItemType Directory -Path $packageSource | Out-Null
+        Copy-Item -LiteralPath (Join-Path $repositoryRoot "src\CHANGELOG.md") -Destination $packageSource
+    }
+
+    $selfContainedOutput = Join-Path $artifactRoot "CodexMonitor-$Version-$Runtime-self-contained.exe"
+    $frameworkOutput = Join-Path $artifactRoot "CodexMonitor-$Version-$Runtime-framework-dependent.exe"
+    Copy-Item -LiteralPath $selfContainedExe -Destination $selfContainedOutput -Force
+    Copy-Item -LiteralPath $frameworkExe -Destination $frameworkOutput -Force
+    $selfContainedZip = Join-Path $artifactRoot "CodexMonitor-$Version-$Runtime-self-contained.zip"
+    $frameworkZip = Join-Path $artifactRoot "CodexMonitor-$Version-$Runtime-framework-dependent.zip"
+    Compress-Archive -Path (Join-Path $selfContainedDirectory "*") -DestinationPath $selfContainedZip -Force
+    Compress-Archive -Path (Join-Path $frameworkDirectory "*") -DestinationPath $frameworkZip -Force
+
+    $outputs = @($selfContainedOutput, $frameworkOutput, $selfContainedZip, $frameworkZip)
+    foreach ($output in $outputs) {
+        if (-not (Test-Path -LiteralPath $output -PathType Leaf)) {
+            throw "Missing release package: $output"
         }
-        foreach ($item in Get-ChildItem -LiteralPath $releaseRoot -Force) {
-            Assert-ChildPath $releaseRoot $item.FullName
-            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-                throw "Release contains a link; refusing to clear it: $($item.FullName)"
-            }
-        }
-    } else {
-        New-Item -ItemType Directory -Path $releaseRoot | Out-Null
     }
-
-    $releasePrefix = [IO.Path]::GetFullPath($releaseRoot).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-    $runningReleaseProcesses = @(Get-Process -Name "CodexMonitor" -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.Path -and [IO.Path]::GetFullPath($_.Path).StartsWith(
-                $releasePrefix, [StringComparison]::OrdinalIgnoreCase)
-        })
-    if ($runningReleaseProcesses.Count -gt 0) {
-        throw "Close the running CodexMonitor in Release before publishing."
-    }
-
-    foreach ($item in Get-ChildItem -LiteralPath $releaseRoot -Force) {
-        Assert-ChildPath $releaseRoot $item.FullName
-        Remove-Item -LiteralPath $item.FullName -Recurse -Force
-    }
-
-    $selfContainedOutput = Join-Path $releaseRoot "CodexMonitor-$Version-$Runtime-self-contained.exe"
-    $frameworkOutput = Join-Path $releaseRoot "CodexMonitor-$Version-$Runtime-framework-dependent.exe"
-    Copy-Item -LiteralPath $selfContainedExe -Destination $selfContainedOutput
-    Copy-Item -LiteralPath $frameworkExe -Destination $frameworkOutput
-
-    $outputFiles = @(Get-ChildItem -LiteralPath $releaseRoot -Force)
-    if ($outputFiles.Count -ne 2 -or
-        -not (Test-Path -LiteralPath $selfContainedOutput) -or
-        -not (Test-Path -LiteralPath $frameworkOutput)) {
-        throw "Release does not contain exactly the two expected executables."
-    }
-    Get-Item -LiteralPath $selfContainedOutput, $frameworkOutput |
-        Select-Object Name, Length, @{Name="FileVersion"; Expression={$_.VersionInfo.FileVersion}}
+    Get-Item -LiteralPath $outputs | Select-Object Name, Length, LastWriteTime
 } finally {
     $env:DOTNET_CLI_HOME = $previousDotnetHome
     $env:NUGET_PACKAGES = $previousNugetPackages
