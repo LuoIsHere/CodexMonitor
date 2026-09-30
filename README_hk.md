@@ -7,7 +7,7 @@
 
 一款輕巧的 Windows 工具，透過主視窗、通知區域及浮動視窗顯示 Codex 額度、重設時間、訂閱類型與更新狀態。
 
-版本：`0.3.2`
+版本：`0.3.3`
 
 ![CodexMonitor 主視窗](assets/screenshots/codex-monitor-dashboard.png)
 
@@ -18,6 +18,8 @@
 - 讀取失敗時保留最近成功取得的資料，顯示狀態並按設定發出通知。
 - 通知區域提供還原視窗、設定、浮動視窗控制及結束程式的選項。
 - 浮動視窗可獨立選擇顯示內容、拖動並儲存位置；鎖定後置頂並支援滑鼠點擊穿透，與主視窗共用監控狀態。
+- 浮動視窗狀態點在任何顯示欄位組合下都保持可見。
+- 設定視窗沿用主視窗的 Acrylic 背景，Windows 透明效果關閉時使用深色後備背景。
 - 可選擇在目前使用者登入 Windows 後自動啟動，並最小化至通知區域。
 - 只執行一個執行個體：手動重複啟動會還原現有視窗，自動重複啟動則靜默結束。
 - 主視窗、設定及通知區域支援簡體中文、英語及繁體中文（香港），浮動視窗保留英語顯示。
@@ -33,14 +35,12 @@ Token/API Key 帳戶的額度與更新時間顯示為 `None`，重設時間顯�
 | 自包含單一 EXE 或 ZIP | 不需要 |
 | 依賴執行階段的單一 EXE 或 ZIP | 需要 .NET 10 Desktop Runtime x64 |
 
-EXE 檔案名稱格式如下，`<版本號>` 例如 `0.3.2`：
+EXE 檔案名稱格式如下，`<版本號>` 例如 `0.3.3`：
 
 - 自包含版：`CodexMonitor-<版本號>-win-x64-self-contained.exe`
 - 依賴執行階段版：`CodexMonitor-<版本號>-win-x64-framework-dependent.exe`
 
-ZIP 套件沿用相同名稱，副檔名改為 `.zip`。
-
-各套件功能相同。ZIP 解壓縮後執行 `CodexMonitor.exe`，單一 EXE 可直接執行。從原始碼建置需要 .NET 10 SDK。
+ZIP 套件沿用相同名稱，副檔名改為 `.zip`。各套件功能相同，單一 EXE 可直接執行，ZIP 解壓縮後執行 `CodexMonitor.exe`。從原始碼建置需要 .NET 10 SDK。
 
 已驗證的 Codex 版本：
 
@@ -58,9 +58,15 @@ Codex 升級可能會改變本地 app-server 通訊協定。
 
 在「設定 → 一般 → 介面語言」選擇語言並儲存，即時生效；預設使用簡體中文。
 
+![CodexMonitor 設定視窗、Acrylic 背景及說明圖示](assets/screenshots/codex-monitor-settings.png)
+
+滑鼠移至 ⓘ 查看說明，移開即關閉。使用鍵盤時，先按 Tab 將焦點移至 ⓘ，再按 Enter 或空格開啟說明，按 Esc 關閉。
+
 ![CodexMonitor 浮動視窗](assets/screenshots/codex-monitor-floating-window.png)
 
 在通知區域選單或設定中啟用浮動視窗。解鎖後可拖動，鎖定後置頂並讓滑鼠點擊穿透。可透過通知區域選單或設定解鎖；顯示內容與主視窗分開設定。
+
+狀態點：灰色表示等候，藍色表示更新中，綠色表示成功，紅色表示失敗且無資料，橙色表示失敗但保留舊資料。
 
 ## 登入 Windows 後自動啟動
 
@@ -112,21 +118,13 @@ dotnet build .\CodexMonitor.sln -c Release
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release
 ```
 
-測試使用模擬啟動項目儲存及臨時設定，不會修改目前使用者的實際啟動項目。WPF 生命週期測試約需一分鐘，用以驗證實際的定時更新，不會顯示視窗。項目沒有第三方 NuGet 相依套件，基本建置使用已安裝的 SDK 及桌面目標套件。
+測試使用模擬啟動項目儲存及臨時設定，不會修改目前使用者的實際啟動項目。WPF 檢查包括一分鐘更新計時、浮動視窗佈局及兩種背景模式下的多語言設定。項目沒有第三方 NuGet 相依套件，基本建置使用已安裝的 SDK 及桌面目標套件。
 
 可選用實際 Codex 讀取測試：
 
 ```powershell
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release -- --live
 ```
-
-產生四種發佈套件至 `artifacts/`：
-
-```powershell
-powershell.exe -NoProfile -File .\build\Publish.ps1
-```
-
-自包含發佈可能會從 NuGet.org 下載 Microsoft 執行階段套件。ZIP 套件包含三種語言的 README、目前更新記錄及授權條款。
 
 ## 項目資訊
 

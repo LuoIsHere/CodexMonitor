@@ -7,7 +7,7 @@
 
 一个轻量 Windows 工具，通过主窗口、托盘和悬浮窗显示 Codex 额度、重置时间、订阅类型与刷新状态。
 
-版本：`0.3.2`
+版本：`0.3.3`
 
 ![CodexMonitor 主窗口](assets/screenshots/codex-monitor-dashboard.png)
 
@@ -18,6 +18,8 @@
 - 读取失败时保留最近成功数据，显示状态并按设置通知。
 - 托盘提供恢复窗口、设置、悬浮窗控制及退出入口。
 - 悬浮窗可独立选择显示字段、拖动并保存位置；锁定后置顶并支持鼠标穿透，与主窗口共用监控状态。
+- 悬浮窗状态点在任意显示字段组合下都保持可见。
+- 设置窗口复用主窗口的 Acrylic 背景，Windows 透明效果关闭时使用深色回退。
 - 可选择当前用户登录 Windows 后自启，并选择自动启动时最小化到托盘。
 - 单实例运行：手动重复启动恢复已有窗口，自动重复启动静默退出。
 - 主窗口、设置和托盘支持简体中文、英语及繁体中文（香港），悬浮窗保留英语显示。
@@ -33,14 +35,12 @@ Token/API Key 账号的额度与刷新时间显示为 `None`，重置时间显�
 | 自包含单 EXE 或 ZIP | 不需要 |
 | 依赖运行时的单 EXE 或 ZIP | 需要 .NET 10 Desktop Runtime x64 |
 
-EXE 文件名规律如下，`<版本号>` 例如 `0.3.2`：
+EXE 文件名规律如下，`<版本号>` 例如 `0.3.3`：
 
 - 自包含版：`CodexMonitor-<版本号>-win-x64-self-contained.exe`
 - 依赖运行时版：`CodexMonitor-<版本号>-win-x64-framework-dependent.exe`
 
-ZIP 包命名相同，扩展名改为 `.zip`。
-
-各包功能相同。ZIP 解压后运行 `CodexMonitor.exe`，单 EXE 可直接运行。从源码构建需要 .NET 10 SDK。
+ZIP 包命名相同，扩展名改为 `.zip`。各包功能相同，单 EXE 可直接运行，ZIP 解压后运行 `CodexMonitor.exe`。从源码构建需要 .NET 10 SDK。
 
 已验证的 Codex 版本：
 
@@ -58,9 +58,15 @@ Codex 升级可能改变本地 app-server 协议。
 
 在“设置 → 常规 → 界面语言”中选择语言并保存，即时生效；默认使用简体中文。
 
+![CodexMonitor 设置窗口、Acrylic 背景与帮助图标](assets/screenshots/codex-monitor-settings.png)
+
+鼠标移入 ⓘ 查看说明，移出即关闭。使用键盘时，先按 Tab 将焦点移到 ⓘ，再按 Enter 或空格打开说明，按 Esc 关闭。
+
 ![CodexMonitor 悬浮窗](assets/screenshots/codex-monitor-floating-window.png)
 
 在托盘菜单或设置中开启悬浮窗。解锁时可拖动，锁定后置顶并让鼠标点击穿透。通过托盘菜单或设置解锁；显示字段与主窗口分别配置。
+
+状态点：灰色表示等待，蓝色表示刷新中，绿色表示成功，红色表示失败且无数据，橙色表示失败但保留旧数据。
 
 ## 登录 Windows 后自动启动
 
@@ -112,21 +118,13 @@ dotnet build .\CodexMonitor.sln -c Release
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release
 ```
 
-测试使用模拟启动项存储和临时配置，不修改当前用户真实启动项。WPF 生命周期测试约需一分钟，用于验证真实定时刷新，不显示窗口。项目没有第三方 NuGet 依赖，基本构建使用已安装的 SDK 和桌面目标包。
+测试使用模拟启动项存储和临时配置，不修改当前用户真实启动项。WPF 检查包含一分钟刷新计时、悬浮窗布局及两种背景模式下的多语言设置。项目没有第三方 NuGet 依赖，基本构建使用已安装的 SDK 和桌面目标包。
 
 可选的真实 Codex 读取探针：
 
 ```powershell
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release -- --live
 ```
-
-生成四种发布包到 `artifacts/`：
-
-```powershell
-powershell.exe -NoProfile -File .\build\Publish.ps1
-```
-
-自包含发布可能从 NuGet.org 下载 Microsoft 运行时包。ZIP 包包含三种语言的 README、当前更新记录和许可证。
 
 ## 项目信息
 

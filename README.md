@@ -7,7 +7,7 @@
 
 A small Windows utility for viewing Codex quota, reset times, subscription type and refresh status from the notification area or a compact floating window.
 
-Version: `0.3.2`
+Version: `0.3.3`
 
 ![CodexMonitor dashboard](assets/screenshots/codex-monitor-dashboard.png)
 
@@ -18,6 +18,8 @@ Version: `0.3.2`
 - Last successful data retained after a failed read, with status and optional notifications.
 - Notification-area controls for restoring the main window, settings, floating-window controls and exit.
 - A draggable floating window with independent display settings, remembered position, and locked click-through/topmost mode. Both windows use the same monitor state.
+- A floating-window status dot remains visible with any combination of display fields.
+- Settings share the main window's Acrylic background, with a dark fallback when Windows transparency effects are off.
 - Optional startup at Windows sign-in for the current user, with an option to start in the notification area.
 - Single-instance operation: manual launches restore the running application; automatic launches leave it undisturbed.
 - Simplified Chinese, English and Traditional Chinese (Hong Kong) for the main window, settings and tray. The floating window keeps its English labels.
@@ -33,14 +35,12 @@ Windows 10 version 1809 or later, x64, with Codex for Windows installed and sign
 | Self-contained single EXE or ZIP | No |
 | Framework-dependent single EXE or ZIP | .NET 10 Desktop Runtime x64 |
 
-EXE filenames follow these patterns (`<version>` is the release version, such as `0.3.2`):
+EXE filenames follow these patterns (`<version>` is the release version, such as `0.3.3`):
 
 - Self-contained: `CodexMonitor-<version>-win-x64-self-contained.exe`
 - Framework-dependent: `CodexMonitor-<version>-win-x64-framework-dependent.exe`
 
-ZIP packages use the same names with a `.zip` extension.
-
-All packages have the same features. Extract ZIP packages before running `CodexMonitor.exe`. Single EXE packages can be run directly. Building from source requires the .NET 10 SDK.
+ZIP packages use the same names with a `.zip` extension. All packages have the same features: run a single EXE directly, or extract a ZIP and run `CodexMonitor.exe`. Building from source requires the .NET 10 SDK.
 
 Verified Codex versions:
 
@@ -58,9 +58,15 @@ Run the application to open the dashboard. Use **Refresh now** for an immediate 
 
 Choose a language in **Settings → General → Language** and save. The change takes effect immediately; the default is Simplified Chinese.
 
+![CodexMonitor settings with Acrylic background and help icons](assets/screenshots/codex-monitor-settings.png)
+
+Hover over ⓘ for help; move away to dismiss it. For keyboard access, first press Tab to focus the ⓘ icon, then Enter or Space to open help, and Esc to close it.
+
 ![CodexMonitor floating window](assets/screenshots/codex-monitor-floating-window.png)
 
 Enable the floating window from the notification-area menu or Settings. Drag it while unlocked. Locking enables mouse click-through and keeps it on top; unlock it from the notification-area menu or Settings. Its fields can be configured separately from the main window.
+
+Status dot: gray = waiting, blue = refreshing, green = success, red = failure with no data, orange = failure with older data retained.
 
 ## Start at Windows sign-in
 
@@ -110,21 +116,13 @@ dotnet build .\CodexMonitor.sln -c Release
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release
 ```
 
-Tests use simulated startup storage and temporary settings, not the user's actual startup entry. The WPF lifecycle test takes about a minute to verify the real refresh timer without displaying windows. The repository has no third-party NuGet dependencies; basic builds use the installed SDK and desktop targeting packs.
+Tests use simulated startup storage and temporary settings, not the user's actual startup entry. WPF checks include a one-minute refresh timer, floating-window layouts and localized settings in both background modes. The repository has no third-party NuGet dependencies; basic builds use the installed SDK and desktop targeting packs.
 
 An optional live Codex probe is available:
 
 ```powershell
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release -- --live
 ```
-
-To create the four release packages in `artifacts/`:
-
-```powershell
-powershell.exe -NoProfile -File .\build\Publish.ps1
-```
-
-Self-contained publishing may download Microsoft runtime packs from NuGet.org. ZIP packages include the READMEs, current changelog and license.
 
 ## Project
 
