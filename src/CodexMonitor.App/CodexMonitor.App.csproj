@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\CodexMonitor.ico" />
+    <InternalsVisibleTo Include="CodexMonitor.Tests" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodexMonitor.Core\CodexMonitor.Core.csproj" />

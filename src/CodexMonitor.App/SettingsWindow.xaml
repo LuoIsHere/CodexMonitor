@@ -6,7 +6,7 @@
         Icon="Assets/CodexMonitor.ico"
         Width="460"
         Height="610"
-        AllowsTransparency="True"
+        AllowsTransparency="False"
         Background="Transparent"
         Foreground="{StaticResource PrimaryTextBrush}"
         ResizeMode="NoResize"
@@ -14,12 +14,12 @@
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterOwner"
-        WindowStyle="None"
+        WindowStyle="SingleBorderWindow"
         KeyDown="OnWindowKeyDown">
   <shell:WindowChrome.WindowChrome>
     <shell:WindowChrome CaptionHeight="38"
                         CornerRadius="0"
-                        GlassFrameThickness="0"
+                        GlassFrameThickness="-1"
                         ResizeBorderThickness="0"
                         UseAeroCaptionButtons="False" />
   </shell:WindowChrome.WindowChrome>
@@ -152,10 +152,11 @@
     </Style>
   </Window.Resources>
 
-  <Border Background="#F2181818"
+  <Border x:Name="WindowSurface"
+          Background="{StaticResource WindowTintBrush}"
           BorderBrush="#32FFFFFF"
           BorderThickness="1"
-          CornerRadius="12">
+          CornerRadius="0">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="38" />
@@ -163,11 +164,12 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <Border Grid.Row="0"
+      <Border x:Name="TitleBarSurface"
+              Grid.Row="0"
               Background="#18FFFFFF"
               BorderBrush="{StaticResource DividerBrush}"
               BorderThickness="0,0,0,1"
-              CornerRadius="12,12,0,0">
+              CornerRadius="0">
         <Grid Margin="12,0,4,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />

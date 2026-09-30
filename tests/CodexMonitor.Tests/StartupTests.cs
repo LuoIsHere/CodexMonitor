@@ -257,7 +257,7 @@ internal static class StartupTests
         }) { IsBackground = true };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        Check(thread.Join(TimeSpan.FromSeconds(85)), "WPF test timeout");
+        Check(thread.Join(TimeSpan.FromSeconds(150)), "WPF test timeout");
         if (failure is not null) throw new InvalidOperationException($"WPF lifecycle failed: {failure.Message}", failure);
     }
 
@@ -469,28 +469,47 @@ internal static class StartupTests
         var registry = new MemoryStartupStore();
         var arguments = Environment.GetCommandLineArgs();
         var renderIndex = Array.IndexOf(arguments, "--render-settings");
-        var output = renderIndex >= 0 && renderIndex + 1 < arguments.Length
+        var outputRoot = renderIndex >= 0 && renderIndex + 1 < arguments.Length
             ? Path.GetFullPath(arguments[renderIndex + 1]) : null;
-        if (output is not null) Directory.CreateDirectory(output);
         try
         {
+            foreach (var useLayeredFallback in new[] { false, true })
             foreach (var language in new[] { "en", "zh-HK", "zh-CN" })
             {
+                var output = outputRoot is null ? null : Path.Combine(outputRoot,
+                    useLayeredFallback ? "fallback" : "native-layout");
+                if (output is not null) Directory.CreateDirectory(output);
                 ApplicationLocalizer.Apply(language);
                 var saves = 0;
+                var backdropApplications = 0;
+                var rendered = new TaskCompletionSource();
                 var window = new SettingsWindow(new AppSettings { Language = language }, Service(registry), _ =>
                 {
                     saves++;
                     return Task.CompletedTask;
+                }, useLayeredFallback, target =>
+                {
+                    Check(new System.Windows.Interop.WindowInteropHelper(target).Handle != IntPtr.Zero,
+                        "backdrop is applied only after a native window exists");
+                    backdropApplications++;
                 });
+                window.ContentRendered += (_, _) => rendered.TrySetResult();
                 try
                 {
+                    CheckSettingsBackdrop(window, useLayeredFallback);
+                    Check(backdropApplications == 0, "backdrop is not applied during construction");
                     // ToolTip requires a live presentation source. Keep the test window off screen and inactive.
                     window.WindowStartupLocation = WindowStartupLocation.Manual;
                     window.Left = -32000;
                     window.Top = -32000;
                     window.ShowActivated = false;
                     window.Show();
+                    await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                    Check(backdropApplications == 1, "backdrop applies on first render");
+                    window.Hide();
+                    window.Show();
+                    await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+                    Check(backdropApplications == 1, "showing the window again does not reapply backdrop");
                     var viewModel = (SettingsWindowViewModel)window.DataContext;
                     Check(!viewModel.StartupEnabled && viewModel.MinimizeToTray, "settings window initial startup values");
                     Check(window.Title == AppText.Get("SettingsTitle"), "localized settings title");
@@ -517,11 +536,95 @@ internal static class StartupTests
                     Check(window.Title == AppText.Get("SettingsTitle"), "settings title updates dynamically");
                 }
                 finally { window.Close(); }
-                if (output is not null) await RenderMonitorWindowsAsync(language, output);
+                TestSettingsDialog(useLayeredFallback);
+                if (output is not null && !useLayeredFallback) await RenderMonitorWindowsAsync(language, output);
             }
             Check(registry.Writes == 0 && registry.Deletes == 0, "opening localized settings never writes startup entry");
         }
         finally { ApplicationLocalizer.Apply("zh-CN"); }
+    }
+
+    private static void CheckSettingsBackdrop(SettingsWindow window, bool useLayeredFallback)
+    {
+        var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(window);
+        var surface = (Border)window.FindName("WindowSurface");
+        var title = (Border)window.FindName("TitleBarSurface");
+        Check(window.AllowsTransparency == useLayeredFallback && window.WindowStyle ==
+            (useLayeredFallback ? WindowStyle.None : WindowStyle.SingleBorderWindow), "backdrop window mode");
+        Check(chrome.GlassFrameThickness == new Thickness(useLayeredFallback ? 0 : -1) &&
+            chrome.ResizeBorderThickness == new Thickness(0) && chrome.CaptionHeight == 38 &&
+            !chrome.UseAeroCaptionButtons && window.ResizeMode == ResizeMode.NoResize,
+            "custom title bar remains non-resizable in both modes");
+        Check(surface.CornerRadius == new CornerRadius(useLayeredFallback ? 12 : 0) &&
+            title.CornerRadius == (useLayeredFallback ? new CornerRadius(12, 12, 0, 0) : new CornerRadius(0)),
+            "fallback uses WPF rounded corners; native mode delegates corners to DWM");
+        Check(useLayeredFallback
+            ? ReferenceEquals(surface.Background, window.FindResource("WindowTintBrush"))
+            : ((SolidColorBrush)surface.Background).Color.A == 0, "fallback tint or exposed native backdrop");
+        Check(window.Opacity == 1 && surface.Opacity == 1 && title.Opacity == 1 &&
+            ((SolidColorBrush)window.FindResource("PrimaryTextBrush")).Color.A == 255 &&
+            ((SolidColorBrush)window.FindResource("SecondaryTextBrush")).Color.A == 255,
+            "background mode never reduces window or text opacity");
+    }
+
+    private static void TestSettingsDialog(bool useLayeredFallback)
+    {
+        foreach (var action in new[] { "save", "cancel", "escape", "close", "save-error" })
+        {
+            var registry = new MemoryStartupStore();
+            AppSettings? saved = null;
+            var window = new SettingsWindow(new AppSettings(), Service(registry), settings =>
+            {
+                if (action == "save-error") throw new IOException("Test save failure");
+                saved = settings;
+                return Task.CompletedTask;
+            }, useLayeredFallback, _ => { });
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.Left = -32000;
+            window.Top = -32000;
+            window.ShowActivated = false;
+            Exception? failure = null;
+            window.ContentRendered += async (_, _) =>
+            {
+                try
+                {
+                    var viewModel = (SettingsWindowViewModel)window.DataContext;
+                    viewModel.RefreshIntervalMinutes = 17;
+                    var buttons = Descendants<Button>((FrameworkElement)window.Content).ToArray();
+                    if (action is "save" or "save-error")
+                    {
+                        buttons.Single(button => button.IsDefault).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        await window.WaitForSaveAsync();
+                        if (action == "save-error")
+                        {
+                            Check(window.IsVisible && window.IsEnabled && !string.IsNullOrEmpty(viewModel.SaveError),
+                                "save failure keeps the dialog usable and shows an error");
+                            buttons.Single(button => button.IsCancel).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        }
+                    }
+                    else if (action == "cancel")
+                        buttons.Single(button => button.IsCancel).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    else if (action == "escape")
+                        window.RaiseEvent(new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,
+                            PresentationSource.FromVisual(window), Environment.TickCount, System.Windows.Input.Key.Escape)
+                            { RoutedEvent = System.Windows.Input.Keyboard.KeyDownEvent });
+                    else
+                        buttons.Single(System.Windows.Shell.WindowChrome.GetIsHitTestVisibleInChrome)
+                            .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                }
+                catch (Exception exception) { failure = exception; window.Close(); }
+            };
+            try
+            {
+                var result = window.ShowDialog();
+                if (failure is not null) throw failure;
+                Check(result == (action == "save"), "save accepts; cancel, Escape and close dismiss the dialog");
+                Check(action == "save" ? saved?.RefreshIntervalMinutes == 17 : saved is null,
+                    "only Save persists the edited settings draft");
+                Check(registry.Writes == 0 && registry.Deletes == 0, "dialog never changes unedited startup registration");
+            }
+            finally { window.Close(); }
+        }
     }
 
     private static async Task TestSettingsHelpAsync(SettingsWindow window, string? output, string language)

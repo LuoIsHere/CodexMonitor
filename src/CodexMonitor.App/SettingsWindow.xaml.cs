@@ -1,10 +1,12 @@
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Shell;
 using Button = System.Windows.Controls.Button;
 using ToolTip = System.Windows.Controls.ToolTip;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using LuoIsHere.CodexMonitor.App.ViewModels;
+using LuoIsHere.CodexMonitor.App.Windows;
 using LuoIsHere.CodexMonitor.Infrastructure.Settings;
 using LuoIsHere.CodexMonitor.Infrastructure.Startup;
 
@@ -15,24 +17,59 @@ public partial class SettingsWindow : Window
     private readonly SettingsWindowViewModel _viewModel;
     private readonly UserStartupService _startup;
     private readonly StartupSettingsSession _session;
+    private readonly Action<Window> _applyBackdrop;
     private bool _saving;
     private TaskCompletionSource? _saveFinished;
     private ToolTip? _openHelp;
 
     public SettingsWindow(AppSettings settings, UserStartupService startup, Func<AppSettings, Task> saveSettings)
+        : this(settings, startup, saveSettings, WindowBackdropService.RequiresLayeredTransparencyFallback(),
+            WindowBackdropService.ApplyDarkAcrylic)
+    {
+    }
+
+    internal SettingsWindow(AppSettings settings, UserStartupService startup, Func<AppSettings, Task> saveSettings,
+        bool useLayeredFallback, Action<Window> applyBackdrop)
     {
         InitializeComponent();
+        ConfigureBackdropMode(useLayeredFallback);
+        _applyBackdrop = applyBackdrop;
         _viewModel = new SettingsWindowViewModel(settings);
         _startup = startup;
         _session = new StartupSettingsSession(settings, startup, saveSettings);
         _viewModel.StartupStatus = startup.ReadStatus();
         DataContext = _viewModel;
+        ContentRendered += OnContentRendered;
         Closing += (_, e) => e.Cancel = _saving;
         Deactivated += (_, _) => CloseHelp();
         Closed += (_, _) => CloseHelp();
     }
 
     public Task WaitForSaveAsync() => _saveFinished?.Task ?? Task.CompletedTask;
+
+    private void ConfigureBackdropMode(bool useLayeredFallback)
+    {
+        if (useLayeredFallback)
+        {
+            WindowStyle = WindowStyle.None;
+            AllowsTransparency = true;
+            if (WindowChrome.GetWindowChrome(this) is { } chrome)
+            {
+                chrome.GlassFrameThickness = new Thickness(0);
+            }
+            WindowSurface.CornerRadius = new CornerRadius(12);
+            TitleBarSurface.CornerRadius = new CornerRadius(12, 12, 0, 0);
+            return;
+        }
+
+        WindowSurface.Background = System.Windows.Media.Brushes.Transparent;
+    }
+
+    private void OnContentRendered(object? sender, EventArgs e)
+    {
+        ContentRendered -= OnContentRendered;
+        _applyBackdrop(this);
+    }
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
