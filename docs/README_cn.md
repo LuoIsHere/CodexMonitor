@@ -3,13 +3,13 @@
 
 # CodexMonitor
 
-[English](README.md) · [繁體中文（香港）](README_hk.md)
+[English](../README.md) · [繁體中文（香港）](README_hk.md)
 
 一个轻量 Windows 工具，通过主窗口、托盘和悬浮窗显示 Codex 额度、重置时间、订阅类型与刷新状态。
 
 版本：`0.3.3`
 
-![CodexMonitor 主窗口](assets/screenshots/codex-monitor-dashboard.png)
+![CodexMonitor 主窗口](../assets/screenshots/codex-monitor-dashboard.png)
 
 ## 功能
 
@@ -58,11 +58,11 @@ Codex 升级可能改变本地 app-server 协议。
 
 在“设置 → 常规 → 界面语言”中选择语言并保存，即时生效；默认使用简体中文。
 
-![CodexMonitor 设置窗口、Acrylic 背景与帮助图标](assets/screenshots/codex-monitor-settings.png)
+![CodexMonitor 设置窗口、Acrylic 背景与帮助图标](../assets/screenshots/codex-monitor-settings.png)
 
 鼠标移入 ⓘ 查看说明，移出即关闭。使用键盘时，先按 Tab 将焦点移到 ⓘ，再按 Enter 或空格打开说明，按 Esc 关闭。
 
-![CodexMonitor 悬浮窗](assets/screenshots/codex-monitor-floating-window.png)
+![CodexMonitor 悬浮窗](../assets/screenshots/codex-monitor-floating-window.png)
 
 在托盘菜单或设置中开启悬浮窗。解锁时可拖动，锁定后置顶并让鼠标点击穿透。通过托盘菜单或设置解锁；显示字段与主窗口分别配置。
 
@@ -130,8 +130,8 @@ dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Rel
 
 额度展示参考了 [CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor)，轻量 Windows 监视工具的使用方式参考了 [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor)。
 
-[当前更新记录](CHANGELOG.md) · [完整历史](src/CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
+[当前更新记录](../CHANGELOG.md) · [完整历史](CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
 
-[MIT 许可证](LICENSE) · Copyright (c) 2026 luoishere
+[MIT 许可证](../LICENSE) · Copyright (c) 2026 luoishere
 
 本项目为借助 OpenAI Codex 开发的个人工具，可能存在缺陷，按 MIT 许可证不提供担保。

@@ -3,13 +3,13 @@
 
 # CodexMonitor
 
-[English](README.md) · [简体中文](README_cn.md)
+[English](../README.md) · [简体中文](README_cn.md)
 
 一款輕巧的 Windows 工具，透過主視窗、通知區域及浮動視窗顯示 Codex 額度、重設時間、訂閱類型與更新狀態。
 
 版本：`0.3.3`
 
-![CodexMonitor 主視窗](assets/screenshots/codex-monitor-dashboard.png)
+![CodexMonitor 主視窗](../assets/screenshots/codex-monitor-dashboard.png)
 
 ## 功能
 
@@ -58,11 +58,11 @@ Codex 升級可能會改變本地 app-server 通訊協定。
 
 在「設定 → 一般 → 介面語言」選擇語言並儲存，即時生效；預設使用簡體中文。
 
-![CodexMonitor 設定視窗、Acrylic 背景及說明圖示](assets/screenshots/codex-monitor-settings.png)
+![CodexMonitor 設定視窗、Acrylic 背景及說明圖示](../assets/screenshots/codex-monitor-settings.png)
 
 滑鼠移至 ⓘ 查看說明，移開即關閉。使用鍵盤時，先按 Tab 將焦點移至 ⓘ，再按 Enter 或空格開啟說明，按 Esc 關閉。
 
-![CodexMonitor 浮動視窗](assets/screenshots/codex-monitor-floating-window.png)
+![CodexMonitor 浮動視窗](../assets/screenshots/codex-monitor-floating-window.png)
 
 在通知區域選單或設定中啟用浮動視窗。解鎖後可拖動，鎖定後置頂並讓滑鼠點擊穿透。可透過通知區域選單或設定解鎖；顯示內容與主視窗分開設定。
 
@@ -130,8 +130,8 @@ dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Rel
 
 額度顯示參考了 [CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor)，輕巧 Windows 監察工具的使用方式參考了 [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor)。
 
-[目前更新記錄](CHANGELOG.md) · [完整歷史](src/CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
+[目前更新記錄](../CHANGELOG.md) · [完整歷史](CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
 
-[MIT 授權條款](LICENSE) · Copyright (c) 2026 luoishere
+[MIT 授權條款](../LICENSE) · Copyright (c) 2026 luoishere
 
 本項目為借助 OpenAI Codex 開發的個人工具，可能存在缺陷，按 MIT 授權條款不提供任何擔保。

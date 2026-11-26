@@ -3,7 +3,7 @@
 
 # CodexMonitor
 
-[简体中文](README_cn.md) · [繁體中文（香港）](README_hk.md)
+[简体中文](docs/README_cn.md) · [繁體中文（香港）](docs/README_hk.md)
 
 A small Windows utility for viewing Codex quota, reset times, subscription type and refresh status from the notification area or a compact floating window.
 
@@ -128,7 +128,7 @@ dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Rel
 
 Inspired by [CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor) for quota display and [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor) for an accessible Windows monitor.
 
-[Current changelog](CHANGELOG.md) · [Complete history](src/CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
+[Current changelog](CHANGELOG.md) · [Complete history](docs/CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
 
 [MIT License](LICENSE) · Copyright (c) 2026 luoishere
 

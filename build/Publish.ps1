@@ -135,16 +135,21 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Framework-dependent single-file publish failed." }
     $frameworkExe = Assert-PublishedExecutable $frameworkSingleFileDirectory $Version -SingleFile
 
-    $publicFiles = @("README.md", "README_cn.md", "README_hk.md", "CHANGELOG.md", "LICENSE") |
+    $publicFiles = @("README.md", "CHANGELOG.md", "LICENSE") |
         ForEach-Object { Join-Path $repositoryRoot $_ }
+    # Package docs/ mirrors the repository layout so relative links in the READMEs and
+    # changelogs resolve inside the ZIP. List files explicitly rather than copying the
+    # whole folder, so local-only files never end up in a release.
+    $docFiles = @("CHANGELOG.md", "README_cn.md", "README_hk.md") |
+        ForEach-Object { Join-Path $repositoryRoot "docs\$_" }
     foreach ($directory in @($selfContainedDirectory, $frameworkDirectory)) {
         Copy-Item -LiteralPath $publicFiles -Destination $directory
         $packageAssets = Join-Path $directory "assets"
         New-Item -ItemType Directory -Path $packageAssets | Out-Null
         Copy-Item -LiteralPath (Join-Path $repositoryRoot "assets\screenshots") -Destination $packageAssets -Recurse
-        $packageSource = Join-Path $directory "src"
-        New-Item -ItemType Directory -Path $packageSource | Out-Null
-        Copy-Item -LiteralPath (Join-Path $repositoryRoot "src\CHANGELOG.md") -Destination $packageSource
+        $packageDocs = Join-Path $directory "docs"
+        New-Item -ItemType Directory -Path $packageDocs | Out-Null
+        Copy-Item -LiteralPath $docFiles -Destination $packageDocs
     }
 
     $selfContainedOutput = Join-Path $artifactRoot "CodexMonitor-$Version-$Runtime-self-contained.exe"

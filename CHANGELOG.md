@@ -1,18 +1,9 @@
 # Changelog
 
-## 0.3.3 - 2026-09-30
-
-### Added
-
-- Added a persistent floating-window status dot for waiting, refreshing, success, failure and retained older data, visible with all display-field combinations.
-- Added localized ⓘ help for settings, including keyboard access.
-
-### Changed
-
-- Settings now share the main window's native Acrylic background and dark rounded fallback, without reducing text or control opacity.
-- Updated screenshots and all three READMEs for this release.
-- Expanded tests for floating-window layouts and localized settings in both background modes.
+## 0.3.4 - 2026-11-26
 
 ### Fixed
 
-- Help now opens on mouse hover and closes on mouse leave; clicking no longer leaves it stuck open.
+- Fixed an intermittent `git.exe` "The application was unable to start correctly (0xc0000142)" dialog during refreshes. Newer Codex versions start `git` when the app-server starts, and stopping the app-server immediately after a read could interrupt it while it was still loading. CodexMonitor now closes the app-server's input and lets it exit on its own, and stops its process tree only if it is still running after 5 seconds.
+
+For all changes in earlier releases, see the [complete changelog](docs/CHANGELOG.md).
