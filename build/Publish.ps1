@@ -82,6 +82,10 @@ try {
         -p:PublishTrimmed=false
     if ($LASTEXITCODE -ne 0) { throw "Self-contained restore failed." }
 
+    # Self-contained WPF ships native DLLs (wpfgfx_cor3 and others); IncludeNativeLibrariesForSelfExtract
+    # bundles them so the EXE stays a single file, and the host extracts only those natives at startup.
+    # Do not use IncludeAllContentForSelfExtract: it is the legacy mode (NETSDK1244) that also extracts
+    # every managed assembly to disk instead of loading them from the bundle.
     & $dotnet publish $project `
         -c Release `
         -r $Runtime `
@@ -90,7 +94,7 @@ try {
         -o $selfContainedDirectory `
         @versionProperties `
         -p:PublishSingleFile=true `
-        -p:IncludeAllContentForSelfExtract=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
         -p:PublishTrimmed=false `
         -p:DebugType=None `
         -p:DebugSymbols=false
@@ -120,6 +124,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Framework-dependent publish failed." }
     $null = Assert-PublishedExecutable $frameworkDirectory $Version
 
+    # WPF native DLLs come from the installed Desktop Runtime, so the default in-memory bundle is
+    # already a single file that extracts nothing. Keep extraction flags off here.
     & $dotnet publish $project `
         -c Release `
         -r $Runtime `
@@ -128,7 +134,6 @@ try {
         -o $frameworkSingleFileDirectory `
         @versionProperties `
         -p:PublishSingleFile=true `
-        -p:IncludeAllContentForSelfExtract=true `
         -p:PublishTrimmed=false `
         -p:DebugType=None `
         -p:DebugSymbols=false
