@@ -1,135 +1,177 @@
-> **Attention**
-> CodexMonitor is a personal project. It is not affiliated with OpenAI, and no OpenAI staff are involved in the project.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/LuoIsHere/CodexMonitor/main/src/CodexMonitor.App/Assets/CodexMonitor.png" alt="CodexMonitor logo" width="96">
+</p>
 
-# CodexMonitor
+<h1 align="center">CodexMonitor</h1>
 
-[简体中文](docs/README_cn.md) · [繁體中文（香港）](docs/README_hk.md)
+<p align="center">Keep your Codex quota in view with a compact floating window on Windows.</p>
 
-A small Windows utility for viewing Codex quota, reset times, subscription type and refresh status from the notification area or a compact floating window.
+<p align="center">
+  <a href="https://github.com/LuoIsHere/CodexMonitor/releases"><img src="https://img.shields.io/github/v/release/LuoIsHere/CodexMonitor" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="https://github.com/LuoIsHere/CodexMonitor/releases"><img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-lightgrey" alt="Platform: Windows 10 | 11"></a>
+</p>
 
-Version: `0.3.3`
+<p align="center">English · <a href="docs/README_cn.md">简体中文</a> · <a href="docs/README_hk.md">繁體中文（香港）</a></p>
 
-![CodexMonitor dashboard](assets/screenshots/codex-monitor-dashboard.png)
+![CodexMonitor main window](assets/screenshots/codex-monitor-dashboard.png)
+
+CodexMonitor shows your remaining Codex quota in a compact floating window on the desktop. Lock it to keep it on top and let mouse clicks pass through. The main window shows the quota for the five-hour and seven-day periods, their reset times and the subscription type, and CodexMonitor keeps running in the notification area when the main window is closed. All data is read through the Codex installed on your computer.
 
 ## Features
 
-- Remaining quota for the approximately five-hour (`5H`) and seven-day (`7D`) windows, with local reset times.
-- One read at startup, manual refresh, and an adjustable 1–60 minute interval (default: 3 minutes).
-- Last successful data retained after a failed read, with status and optional notifications.
-- Notification-area controls for restoring the main window, settings, floating-window controls and exit.
-- A draggable floating window with independent display settings, remembered position, and locked click-through/topmost mode. Both windows use the same monitor state.
-- A floating-window status dot remains visible with any combination of display fields.
-- Settings share the main window's Acrylic background, with a dark fallback when Windows transparency effects are off.
-- Optional startup at Windows sign-in for the current user, with an option to start in the notification area.
-- Single-instance operation: manual launches restore the running application; automatic launches leave it undisturbed.
-- Simplified Chinese, English and Traditional Chinese (Hong Kong) for the main window, settings and tray. The floating window keeps its English labels.
+**Quota**
+- Remaining quota for the five-hour (`5H`) and seven-day (`7D`) windows, reset times in local time, and the subscription type.
+- Accounts that use a token or API key show `None` for quota and refresh time, and `-` for reset times.
 
-Token/API-key accounts display `None` for quota and refresh time, and `-` for reset times.
+**Refresh**
+- One read at startup, **Refresh now** for a manual read, and automatic refresh every 1–60 minutes (3 minutes by default).
+- If a read fails, the last successful data stays on screen with the failure status. Optional system notifications give a short reason; details are written to the log.
 
-## Requirements and downloads
+**Windows**
+- Closing the main window keeps CodexMonitor running in the notification area.
+- The floating window has its own display fields and remembers its position. When locked, it stays on top and lets mouse clicks pass through. Its status dot stays visible with any combination of fields.
+- The main window and the floating window share one monitor and show the same data.
 
-Windows 10 version 1809 or later, x64, with Codex for Windows installed and signed in. Windows 11 is recommended.
+**System**
+- Optional start at Windows sign-in for the current user, with only the notification-area icon or with the main window.
+- Single instance: a manual start restores the running copy; an automatic start leaves it as it is.
 
-| Package | Separate runtime required |
-| --- | --- |
-| Self-contained single EXE or ZIP | No |
-| Framework-dependent single EXE or ZIP | .NET 10 Desktop Runtime x64 |
+**Interface**
+- Simplified Chinese (default), English and Traditional Chinese (Hong Kong) for the main window, settings, notification-area menu and notifications. The floating window keeps its English labels.
+- Settings use the main window's Acrylic background, with a dark fallback when Windows transparency effects are off. The ⓘ icons explain each setting.
 
-EXE filenames follow these patterns (`<version>` is the release version, such as `0.3.3`):
+## Design principles
 
-- Self-contained: `CodexMonitor-<version>-win-x64-self-contained.exe`
-- Framework-dependent: `CodexMonitor-<version>-win-x64-framework-dependent.exe`
+- **Read through Codex only.** Quota and account data come from the local Codex app-server. CodexMonitor does not read Codex credential files, does not request token values and makes no network requests of its own. Account email fields are ignored.
+- **No process left running.** A Codex app-server is started for each read and closed when the read ends.
+- **Standard user permissions.** No administrator rights are needed. Startup uses only the `CodexMonitor` value under the current user's Windows Run key, and it is changed only when you save a startup setting.
+- **No third-party packages.** CodexMonitor is built on .NET 10 and WPF without third-party NuGet dependencies.
 
-ZIP packages use the same names with a `.zip` extension. All packages have the same features: run a single EXE directly, or extract a ZIP and run `CodexMonitor.exe`. Building from source requires the .NET 10 SDK.
+## Requirements
 
-Verified Codex versions:
+- Windows 10 version 1809 or later, x64. Windows 11 is recommended.
+- Codex for Windows, installed and signed in.
+- The framework-dependent package needs the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (x64). The self-contained package needs no separate runtime.
 
-| Codex version | CodexMonitor |
-| --- | --- |
-| `codex-cli 0.147.0-alpha.6.6` | 0.3.0 |
-| `codex-cli 0.155.0-alpha.2.6` | 0.3.1 |
-| Codex desktop 26.917.51856 (`codex-cli 0.155.0-alpha.16`) | 0.3.2 |
+## Installation
 
-The local app-server protocol may change between Codex releases.
+1. Download a package from the [Releases page](https://github.com/LuoIsHere/CodexMonitor/releases):
 
-## Usage
+   | Package | File | Separate runtime |
+   | --- | --- | --- |
+   | Self-contained | `CodexMonitor-<version>-win-x64-self-contained.exe` or `.zip` | Not needed |
+   | Framework-dependent | `CodexMonitor-<version>-win-x64-framework-dependent.exe` or `.zip` | .NET 10 Desktop Runtime x64 |
 
-Run the application to open the dashboard. Use **Refresh now** for an immediate read. Closing the main window keeps monitoring active in the notification area; left-click its icon to restore the window. Right-click for settings and **Exit**.
+   `<version>` is the release version, for example `0.3.4`. All packages have the same features.
+2. Run the single EXE directly, or extract the ZIP and run `CodexMonitor.exe`.
 
-Choose a language in **Settings → General → Language** and save. The change takes effect immediately; the default is Simplified Chinese.
+CodexMonitor is not code-signed. On first start, Windows SmartScreen may show "Windows protected your PC"; choose **More info**, then **Run anyway**.
+
+**Upgrading:** exit the running copy with **Exit** in the notification-area menu, then run the new version. Settings in `%LOCALAPPDATA%\CodexMonitor` are kept. If startup at sign-in is on and the new version has a different file name or location, open **Settings**, select **Register the current path again when saved** and save.
+
+## Getting started
+
+1. Run CodexMonitor. The main window opens and reads the quota once. Click **Refresh now** to read it again at any time.
+2. Close the main window to keep monitoring in the notification area. Left-click the icon to restore the window; right-click it for **Settings**, the floating-window options and **Exit**.
+3. In **Settings**, choose the language, refresh interval, notifications and the fields shown in each window, then click **Save**. The language changes when you save. Hover over ⓘ for help; with the keyboard, press Tab to focus ⓘ, Enter or Space to open it, and Esc to close it.
+4. Select **Enable floating window** in the notification-area menu or in Settings. Drag the floating window while it is unlocked. **Lock floating window** keeps it on top and lets mouse clicks pass through; unlock it from the notification-area menu or Settings.
 
 ![CodexMonitor settings with Acrylic background and help icons](assets/screenshots/codex-monitor-settings.png)
 
-Hover over ⓘ for help; move away to dismiss it. For keyboard access, first press Tab to focus the ⓘ icon, then Enter or Space to open help, and Esc to close it.
-
 ![CodexMonitor floating window](assets/screenshots/codex-monitor-floating-window.png)
 
-Enable the floating window from the notification-area menu or Settings. Drag it while unlocked. Locking enables mouse click-through and keeps it on top; unlock it from the notification-area menu or Settings. Its fields can be configured separately from the main window.
-
-Status dot: gray = waiting, blue = refreshing, green = success, red = failure with no data, orange = failure with older data retained.
+Floating-window status dot: gray = waiting, blue = refreshing, green = success, red = failed with no data, orange = failed with older data kept.
 
 ## Start at Windows sign-in
 
-In **Settings → General**, enable **Start when I sign in to Windows** and save. This is off by default and requires no administrator privileges. Keep **Start in the system tray** checked to show only the notification-area icon and any enabled floating window. Uncheck it to show the main window on automatic startup. Manual launches always open or restore the application window.
+In **Settings → General**, select **Start when I sign in to Windows** and save. It is off by default and needs no administrator rights.
 
-The startup entry changes only when you explicitly save a startup change. **Windows Startup apps settings still control whether it runs**; CodexMonitor does not re-enable entries disabled in Windows Settings or Task Manager.
+- With **Start in the system tray** selected (the default), an automatic start shows only the notification-area icon and any enabled floating window. Clear it to show the main window.
+- A manual start always opens or restores the main window.
+- **Windows Startup apps settings still decide whether CodexMonitor runs.** It does not re-enable an entry turned off in Windows Settings or Task Manager.
+- After moving the program, run it from the new location, select **Register the current path again when saved** and save.
 
-After moving the application, run it from its new location, select **Register the current path again when saved** in Settings and save.
+## Supported Codex versions
+
+CodexMonitor talks to the local Codex app-server. Its protocol can change between Codex releases, so a new Codex version may need a CodexMonitor update.
+
+Verified combinations:
+
+| CodexMonitor | Codex |
+| --- | --- |
+| 0.3.4 | `codex-cli 0.155.0-alpha.2.6`, `codex-cli 0.171.0-alpha.13.2` |
+| 0.3.2 | Codex desktop 26.917.51856 (`codex-cli 0.155.0-alpha.16`) |
+| 0.3.1 | `codex-cli 0.155.0-alpha.2.6` |
+| 0.3.0 | `codex-cli 0.147.0-alpha.6.6` |
+
+`codex.exe` is located in this order:
+
+1. The `codexExecutable` setting.
+2. The `CODEX_EXE` environment variable.
+3. The most recently updated folder under `%LOCALAPPDATA%\OpenAI\Codex\bin`.
+4. The folders on `PATH`.
 
 ## Settings and logs
-
-The default locations are:
 
 ```text
 %LOCALAPPDATA%\CodexMonitor\settings.json
 %LOCALAPPDATA%\CodexMonitor\logs\codex-monitor.log
 ```
 
-Settings control startup, notifications, refresh interval and window contents. Older configurations retain their options and default to startup disabled. Manual JSON edits take effect after restarting; enable Windows startup through the settings window.
+- Set the `CODEX_MONITOR_HOME` environment variable to keep settings and logs in another folder.
+- Settings from older versions keep their options after an upgrade. Edits to `settings.json` take effect after a restart; turn on startup at sign-in in the Settings window, not in the file.
+- The log records read results and errors. Errors can include local paths; check the log before sharing it.
 
-When system notifications are enabled:
-
-- Closing the main window shows a background-running notice, at most once per application session.
-- Failed refreshes show a short reason; details are written to the log.
-
-The optional `codexExecutable` setting accepts a path to `codex.exe`. Automatic discovery prefers the copy under `%LOCALAPPDATA%\OpenAI\Codex\bin`. `CODEX_MONITOR_HOME` can override the settings/log directory.
-
-## Implementation and permissions
+## How it works
 
 - `CodexMonitor.Core`: models, display formatting and refresh state.
-- `CodexMonitor.Infrastructure`: Codex process communication, JSON parsing, settings, logging and user startup registration.
-- `CodexMonitor.App`: WPF views, tray lifecycle, single-instance activation and refresh scheduling.
+- `CodexMonitor.Infrastructure`: communication with Codex, JSON parsing, settings, logging and startup registration.
+- `CodexMonitor.App`: WPF windows, notification-area lifecycle, single-instance activation and refresh scheduling.
 
-Quota reads use the local `codex.exe app-server` over standard input/output. The child process closes after each read; the last successful snapshot stays in memory.
-One application-level monitor schedules refreshes and shares the same state with the main and floating windows.
+For each read, CodexMonitor starts `codex.exe app-server` and exchanges JSON messages with it over standard input and output. When the read ends, it closes the server's input and waits up to 5 seconds for it to exit; only then is the process tree stopped. The last successful result is kept in memory only.
 
-CodexMonitor runs with standard user permissions. Authentication is delegated to Codex; the monitor does not directly read credential files or request token values. Account email fields are ignored. Local logs contain results and error text; inspect them before sharing because errors may contain machine-specific details.
+## Building from source
 
-Startup registration uses only the application's `CodexMonitor` value under the current user's Windows Run key.
-
-## Build and test
-
-On Windows with the .NET 10 SDK:
+Requirements: Windows and the .NET 10 SDK.
 
 ```powershell
 dotnet build .\CodexMonitor.sln -c Release
+```
+
+```powershell
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release
 ```
 
-Tests use simulated startup storage and temporary settings, not the user's actual startup entry. WPF checks include a one-minute refresh timer, floating-window layouts and localized settings in both background modes. The repository has no third-party NuGet dependencies; basic builds use the installed SDK and desktop targeting packs.
-
-An optional live Codex probe is available:
+The tests use simulated startup storage and temporary settings; they do not change the real startup entry. An optional live probe reads the quota through the installed Codex:
 
 ```powershell
 dotnet run --project .\tests\CodexMonitor.Tests\CodexMonitor.Tests.csproj -c Release -- --live
 ```
 
-## Project
+To create the four release packages in `artifacts\`:
 
-Inspired by [CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor) for quota display and [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor) for an accessible Windows monitor.
+```powershell
+.\build\Publish.ps1
+```
 
-[Current changelog](CHANGELOG.md) · [Complete history](docs/CHANGELOG.md) · [GitHub Releases](https://github.com/LuoIsHere/CodexMonitor/releases)
+## Documentation
 
-[MIT License](LICENSE) · Copyright (c) 2026 luoishere
+- [CHANGELOG.md](CHANGELOG.md): changes in the current version.
+- [docs/CHANGELOG.md](docs/CHANGELOG.md): full list of changes in every version.
+- [docs/README_cn.md](docs/README_cn.md), [docs/README_hk.md](docs/README_hk.md): this document in Simplified Chinese and Traditional Chinese (Hong Kong).
+- [LICENSE](LICENSE): the MIT License.
 
-This is a personal project developed with assistance from OpenAI Codex. It may contain defects and is provided without warranty under the MIT License.
+## License and disclaimer
+
+Copyright (c) 2026 luoishere
+
+CodexMonitor is released under the [MIT License](LICENSE).
+
+CodexMonitor is a personal project developed with assistance from OpenAI Codex. It is provided **without any warranty** and may contain defects. Quota figures are read from Codex and are for reference only.
+
+## Acknowledgements and trademarks
+
+The quota display was inspired by [CodexQuotaMonitor](https://github.com/DiMY-CN/CodexQuotaMonitor), and the compact Windows monitor design by [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor).
+
+OpenAI is a trademark of OpenAI, and Codex is an OpenAI product. CodexMonitor is an independent project. It is not affiliated with or endorsed by OpenAI, and no OpenAI staff are involved.
