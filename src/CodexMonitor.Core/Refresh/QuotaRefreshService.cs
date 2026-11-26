@@ -74,17 +74,6 @@ public sealed class QuotaRefreshService : IDisposable
         }
     }
 
-    public async Task RunPeriodicAsync(TimeSpan interval, CancellationToken cancellationToken)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        using var timer = new PeriodicTimer(interval);
-        while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
-        {
-            await RefreshAsync(cancellationToken).ConfigureAwait(false);
-        }
-    }
-
     private void SetState(QuotaMonitorState state)
     {
         _state = state;
