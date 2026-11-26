@@ -10,6 +10,14 @@ namespace LuoIsHere.CodexMonitor.Infrastructure.Codex;
 public sealed class CodexAppServerQuotaProvider : IQuotaProvider
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+
+    // How long app-server may take to exit on its own after stdin is closed before
+    // its process tree is killed. Bounds the extra time added to each refresh.
+    private static readonly TimeSpan GracefulExitTimeout = TimeSpan.FromSeconds(5);
+
+    // Upper bound for draining stderr after app-server has stopped. A child process
+    // that inherited the stderr pipe can keep it open after app-server itself exits.
+    private static readonly TimeSpan StandardErrorDrainTimeout = TimeSpan.FromSeconds(2);
     private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private static readonly string ClientVersion =
         typeof(CodexAppServerQuotaProvider).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
@@ -141,14 +149,15 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
         }
         finally
         {
-            StopProcess(process);
+            await StopProcessAsync(process).ConfigureAwait(false);
             try
             {
-                _ = await standardErrorTask.ConfigureAwait(false);
+                _ = await standardErrorTask.WaitAsync(StandardErrorDrainTimeout).ConfigureAwait(false);
             }
             catch
             {
-                // The process can be terminated while stderr is still being read.
+                // The process can be terminated while stderr is still being read, or a
+                // surviving child can hold the pipe open past the drain timeout.
             }
         }
     }
@@ -283,15 +292,48 @@ public sealed class CodexAppServerQuotaProvider : IQuotaProvider
     private static InvalidOperationException CreateRpcException(JsonElement error)
         => new(AppText.Get("RpcError", error.GetRawText()));
 
-    private static void StopProcess(Process process)
+    /// <summary>
+    /// Stops app-server after a read. Closing stdin ends the stdio transport so the
+    /// server can exit on its own; the process tree is killed only if it is still
+    /// running after <see cref="GracefulExitTimeout"/>. Never throws.
+    /// </summary>
+    /// <remarks>
+    /// Do not kill the tree right away. app-server starts child processes during
+    /// startup (for example <c>git ls-remote</c> for plugin sync), and terminating a
+    /// child while it is still loading its DLLs makes Windows show a
+    /// "0xc0000142" application error dialog on the user's desktop.
+    /// </remarks>
+    private static async Task StopProcessAsync(Process process)
     {
         try
         {
-            if (!process.HasExited)
+            if (process.HasExited)
             {
-                process.Kill(entireProcessTree: true);
-                process.WaitForExit(2_000);
+                return;
             }
+
+            try
+            {
+                process.StandardInput.Close();
+            }
+            catch (IOException)
+            {
+                // The pipe is already broken; the wait below still applies.
+            }
+
+            using var grace = new CancellationTokenSource(GracefulExitTimeout);
+            try
+            {
+                await process.WaitForExitAsync(grace.Token).ConfigureAwait(false);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                // Did not exit in time; fall through to the forced stop.
+            }
+
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit(2_000);
         }
         catch
         {
